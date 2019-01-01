@@ -34,6 +34,35 @@ impl ReadVarint<io::Error> for TcpStream {
     }
 }
 
+impl ReadVarint<io::Error> for Vec<u8> {
+    fn read_varint(&mut self) -> Result<Varint, io::Error> {
+        // see https://wiki.vg/Protocol#VarInt_and_VarLong
+        let mut num_reads: u8 = 0;
+        let mut result: Varint = 0;
+
+        let mut vector = self.clone();
+
+        vector.reverse();
+
+        loop {
+            let item = vector.pop().unwrap();
+
+            num_reads += 1;
+
+            let value: i32 = (item as i32) & 0b01111111;
+            result |= value << (7 * num_reads);
+
+            if item & 0b10000000 == 0 {
+                break;
+            }
+        }
+
+        info!("Number of reads: {}", num_reads);
+
+        Ok(result)
+    }
+}
+
 impl ToVarint for i32 {
     fn to_varint(&self) -> Vec<Varint> {
         let mut remaining = self.clone();

@@ -1,5 +1,6 @@
 use crate::packet::{Packet, PacketData};
 use crate::varint::{ReadVarint, ToVarint};
+use std::char;
 use std::io::{self, Read};
 use std::net::{SocketAddr, TcpStream};
 
@@ -21,11 +22,21 @@ impl Connection {
         // ensure it is the Handshake packet that was sent by the client
         assert!(data_packet.packet_id == 0x0);
 
-        if let PacketData::Data(packet_data) = data_packet.data {
+        if let PacketData::Data(mut packet_data) = data_packet.data {
             info!("{:?}", packet_data);
 
             // read protocol version
-            // let protocol_version = packet_data.
+            // FIXME: This somehow returns tooo great values
+            let protocol_version = packet_data.read_varint()?;
+
+            info!("Protocol version: {:?}", protocol_version);
+            info!(
+                "{:?}",
+                packet_data
+                    .iter()
+                    .map(|x| char::from_u32(*x as u32).unwrap())
+                    .collect::<Vec<_>>()
+            );
         }
 
         Ok(())
