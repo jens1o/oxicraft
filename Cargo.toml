@@ -1,0 +1,9 @@
+[package]
+name = "oxicraft"
+version = "0.1.0"
+authors = ["Jens Hausdorf <mail@jens-hausdorf.de>"]
+edition = "2018"
+
+[dependencies]
+simplelog = "^0.5.0"
+log = "0.4"
