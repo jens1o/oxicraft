@@ -57,7 +57,7 @@ impl ReadVarint<io::Error> for Vec<u8> {
             }
         }
 
-        info!("Number of reads: {}", num_reads);
+        trace!("Number of reads: {}", num_reads);
 
         Ok(result)
     }
