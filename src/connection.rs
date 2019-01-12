@@ -4,9 +4,15 @@ use std::char;
 use std::io::{self, Read};
 use std::net::{SocketAddr, TcpStream};
 
+pub enum ConnectionState {
+    Unknown,
+    Handshaking,
+}
+
 pub struct Connection {
     pub ip_address: SocketAddr,
     pub tcp_stream: TcpStream,
+    pub state: ConnectionState,
 }
 
 impl Connection {
@@ -14,6 +20,7 @@ impl Connection {
         Ok(Connection {
             ip_address: stream.peer_addr()?,
             tcp_stream: stream,
+            state: ConnectionState::Unknown,
         })
     }
 
@@ -21,6 +28,8 @@ impl Connection {
         let data_packet = self.read_data_packet()?;
         // ensure it is the Handshake packet that was sent by the client
         assert!(data_packet.packet_id == 0x0);
+
+        self.state = ConnectionState::Handshaking;
 
         if let PacketData::Data(mut packet_data) = data_packet.data {
             info!("{:?}", packet_data);
