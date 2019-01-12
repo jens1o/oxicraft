@@ -20,15 +20,23 @@ impl ReadVarint<io::Error> for TcpStream {
         loop {
             let mut buffer = [0; 1];
             self.read_exact(&mut buffer)?;
+            dbg!(buffer);
+            let byte = buffer[0];
+            dbg!(byte);
+
             num_reads += 1;
 
-            let value: i32 = (buffer[0] as i32) & 0b01111111;
-            result |= value << (7 * num_reads);
+            assert!(num_reads <= 5, "VarInts are never longer than 5 bytes!");
 
-            if buffer[0] & 0b10000000 == 0 {
+            let value: i32 = (byte as i32) & 0b01111111;
+            result |= dbg!(value << (7 * num_reads));
+            dbg!(result);
+
+            if dbg!(byte & 0b10000000) == 0 {
                 break;
             }
         }
+        trace!("Number of reads on tcp stream: {}", num_reads);
 
         Ok(result)
     }
@@ -43,21 +51,26 @@ impl ReadVarint<io::Error> for Vec<u8> {
         let mut vector = self.clone();
 
         vector.reverse();
+        dbg!(&vector);
 
         loop {
             let item = vector.pop().unwrap();
+            dbg!(item);
 
             num_reads += 1;
+            assert!(num_reads <= 5, "VarInts are never longer than 5 bytes!");
 
             let value: i32 = (item as i32) & 0b01111111;
-            result |= value << (7 * num_reads);
+            result |= dbg!(value << (7 * num_reads));
 
-            if item & 0b10000000 == 0 {
+            dbg!(result);
+
+            if dbg!(item & 0b10000000) == 0 {
                 break;
             }
         }
 
-        trace!("Number of reads: {}", num_reads);
+        trace!("Number of reads on Vec<u8>: {}", num_reads);
 
         Ok(result)
     }
@@ -81,4 +94,4 @@ impl ToVarint for i32 {
 
         result
     }
-}
+}W

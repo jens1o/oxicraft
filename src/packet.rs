@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub struct Packet {
-    pub length: i32,
+    pub length: u32,
     pub packet_id: i32,
     pub data: PacketData,
 }

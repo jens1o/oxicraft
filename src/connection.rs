@@ -55,15 +55,18 @@ impl Connection {
         let length = self.tcp_stream.read_varint()?;
         ensure_data_size(length)?;
 
+        // we now can ensure it is a positive number, thus cast it
+        let length: u32 = length as u32;
+
         let packet_id = self.tcp_stream.read_varint()?;
 
-        let mut buffer = [0; 16];
+        let mut buffer = vec![0; (length as usize) - 2032];
         self.tcp_stream.read_exact(&mut buffer)?;
 
         let packet = Packet {
             length,
             packet_id,
-            data: PacketData::Data(buffer.to_vec()),
+            data: PacketData::Data(buffer),
         };
 
         trace!("Received data packet: {:?}", packet);
