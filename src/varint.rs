@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::io::{self, Read};
 use std::net::TcpStream;
 
-type Varint = i32;
+pub type Varint = i32;
 
 pub trait ReadVarint<E> {
     fn read_varint(&mut self) -> Result<Varint, E>;

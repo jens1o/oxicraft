@@ -4,6 +4,7 @@ extern crate simplelog;
 
 mod connection;
 mod packet;
+mod string;
 mod varint;
 
 use crate::connection::Connection;

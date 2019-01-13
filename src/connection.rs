@@ -1,9 +1,10 @@
 use crate::packet::{Packet, PacketData};
+use crate::string::ReadString;
 use crate::varint::ReadVarint;
 use std::collections::VecDeque;
 use std::io::{self, Read};
 use std::net::{SocketAddr, TcpStream};
-use std::{char, u16};
+use std::u16;
 
 pub enum ConnectionState {
     Unknown,
@@ -56,9 +57,12 @@ impl Connection {
                 ));
             }
 
-            info!("Protocol version: {:?}", protocol_version);
+            trace!("Protocol version: {:?}", protocol_version);
 
             self.protocol_version = Some(protocol_version as u16);
+
+            let server_address = packet_data.read_string(255)?;
+            trace!("Client used {:?} to connect.", server_address);
 
             trace!("Rest of data of handshake packet: {:?}", packet_data);
         }
