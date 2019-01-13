@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::i32;
 use std::io::{self, Read};
 use std::net::TcpStream;
 
@@ -23,8 +24,8 @@ impl ReadVarint<io::Error> for TcpStream {
             self.read_exact(&mut buffer)?;
             let byte = buffer[0];
 
-            let value = byte & 0b01111111;
-            result |= (value as i32) << (7 * num_of_reads);
+            let value = byte & 0b0111_1111;
+            result |= i32::from(value) << (7 * num_of_reads);
 
             num_of_reads += 1;
             if num_of_reads > 5 {
@@ -34,7 +35,7 @@ impl ReadVarint<io::Error> for TcpStream {
                 ));
             }
 
-            if (byte & 0b10000000) == 0 {
+            if (byte & 0b1000_0000) == 0 {
                 break;
             }
         }
@@ -51,8 +52,8 @@ impl ReadVarint<io::Error> for VecDeque<u8> {
 
         loop {
             let byte = self.pop_front().unwrap();
-            let value = byte & 0b01111111;
-            result |= (value as i32) << (7 * num_of_reads);
+            let value = byte & 0b0111_1111;
+            result |= i32::from(value) << (7 * num_of_reads);
 
             num_of_reads += 1;
             if num_of_reads > 5 {
@@ -62,7 +63,7 @@ impl ReadVarint<io::Error> for VecDeque<u8> {
                 ));
             }
 
-            if (byte & 0b10000000) == 0 {
+            if (byte & 0b1000_0000) == 0 {
                 break;
             }
         }
@@ -73,7 +74,7 @@ impl ReadVarint<io::Error> for VecDeque<u8> {
 
 impl ToVarint for i32 {
     fn to_varint(&self) -> Vec<Varint> {
-        let mut remaining = self.clone();
+        let mut remaining = *self;
         let mut result = Vec::with_capacity(7);
 
         loop {

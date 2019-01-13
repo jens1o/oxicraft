@@ -59,12 +59,12 @@ impl Connection {
             // read protocol version
             let protocol_version = packet_data.read_varint()?;
 
-            if protocol_version > u16::max_value() as i32 {
+            if protocol_version > i32::from(u16::max_value()) {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "Too great protocol version supplied.",
                 ));
-            } else if protocol_version < u16::min_value() as i32 {
+            } else if protocol_version < i32::from(u16::min_value()) {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "Too tiny protocol version supplied.",
@@ -77,7 +77,7 @@ impl Connection {
 
             let mut server_address = packet_data.read_string(255)?;
 
-            if server_address == "localhost".to_owned() {
+            if server_address == "localhost" {
                 // bugfix to avoid unnecessary error
                 server_address = "127.0.0.1".to_owned();
             }
@@ -170,7 +170,7 @@ impl Connection {
 
         unimplemented!();
 
-        Ok(())
+        // Ok(())
     }
 
     pub fn read_data_packet(&mut self) -> io::Result<Packet> {

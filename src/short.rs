@@ -25,8 +25,8 @@ impl ReadUnsignedShort<io::Error> for VecDeque<u8> {
         let error_message =
             "VecDeque needs to have at least 2 bytes for reading an unsigned-short.";
 
-        let result: UnsignedShort = ((self.pop_front().expect(error_message) as u16) << 8)
-            .checked_add(self.pop_front().expect(error_message) as u16)
+        let result: UnsignedShort = (u16::from(self.pop_front().expect(error_message)) << 8)
+            .checked_add(u16::from(self.pop_front().expect(error_message)))
             .expect("Unsigned short is too big!");
 
         Ok(result)

@@ -20,7 +20,7 @@ impl ReadString<io::Error> for VecDeque<u8> {
         let mut length = self.read_varint()?;
         ensure_data_size(length)?;
 
-        if length > max_size as Varint {
+        if length > i32::from(max_size) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "String is too large.",
@@ -31,9 +31,9 @@ impl ReadString<io::Error> for VecDeque<u8> {
 
         while length > 0 {
             result.push(
-                char::from_u32(self.pop_front().expect(
+                char::from_u32(u32::from(self.pop_front().expect(
                     "Vec of bytes is too short to read the length that the string should be.",
-                ) as u32)
+                )))
                 .expect("Invalid character in String"),
             );
             length -= 1;
