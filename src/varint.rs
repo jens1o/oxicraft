@@ -95,6 +95,7 @@ impl ToVarint for i32 {
 mod tests {
     use super::Varint;
     use crate::varint::ReadVarint;
+    use std::collections::VecDeque;
 
     #[test]
     fn test_read_varint_from_vec() {
@@ -109,8 +110,8 @@ mod tests {
             (-2147483648, vec![0x80, 0x80, 0x80, 0x80, 0x08]),
         ];
 
-        for mut mapping in mappings {
-            assert_eq!(mapping.0, mapping.1.read_varint().unwrap());
+        for mapping in mappings {
+            assert_eq!(mapping.0, VecDeque::from(mapping.1).read_varint().unwrap());
         }
     }
 }

@@ -60,13 +60,7 @@ impl Connection {
 
             self.protocol_version = Some(protocol_version as u16);
 
-            trace!(
-                "Data of handshake packet: {:?}",
-                packet_data
-                    .iter()
-                    .map(|x| char::from_u32(*x as u32).unwrap())
-                    .collect::<Vec<_>>()
-            );
+            trace!("Rest of data of handshake packet: {:?}", packet_data);
         }
 
         Ok(())
