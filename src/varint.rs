@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::io::{self, Read};
 use std::net::TcpStream;
 
@@ -42,18 +43,14 @@ impl ReadVarint<io::Error> for TcpStream {
     }
 }
 
-impl ReadVarint<io::Error> for Vec<u8> {
+impl ReadVarint<io::Error> for VecDeque<u8> {
     fn read_varint(&mut self) -> Result<Varint, io::Error> {
         // see https://wiki.vg/Protocol#VarInt_and_VarLong
         let mut num_of_reads: u8 = 0;
         let mut result: Varint = 0;
 
-        let mut vector = self.clone();
-
-        vector.reverse();
-
         loop {
-            let byte = vector.pop().unwrap();
+            let byte = self.pop_front().unwrap();
             let value = byte & 0b01111111;
             result |= (value as i32) << (7 * num_of_reads);
 
@@ -69,8 +66,6 @@ impl ReadVarint<io::Error> for Vec<u8> {
                 break;
             }
         }
-
-        //FIXME: We need to seek the Vec here to skip the bytes we already processed.
 
         Ok(result)
     }

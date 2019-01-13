@@ -1,5 +1,6 @@
 use crate::packet::{Packet, PacketData};
 use crate::varint::ReadVarint;
+use std::collections::VecDeque;
 use std::io::{self, Read};
 use std::net::{SocketAddr, TcpStream};
 use std::{char, u16};
@@ -28,8 +29,14 @@ impl Connection {
 
     pub fn do_handshake(&mut self) -> io::Result<()> {
         let data_packet = self.read_data_packet()?;
+
         // ensure it is the Handshake packet that was sent by the client
-        assert!(data_packet.packet_id == 0x0);
+        if data_packet.packet_id != 0x0 {
+            return Err(io::Error::new(
+                io::ErrorKind::AlreadyExists,
+                "Client indicates it is not looking for a handshake, rather than an existing connection."
+            ));
+        }
 
         self.state = ConnectionState::Handshaking;
 
@@ -80,7 +87,7 @@ impl Connection {
         let packet = Packet {
             length,
             packet_id,
-            data: PacketData::Data(buffer),
+            data: PacketData::Data(VecDeque::from(buffer)),
         };
 
         trace!("Received data packet: {:?}", packet);

@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fmt;
 
 #[derive(Debug)]
@@ -20,6 +21,6 @@ impl fmt::Display for Packet {
 #[derive(Debug)]
 pub enum PacketData {
     Command,
-    Data(Vec<u8>),
+    Data(VecDeque<u8>),
     Message(String),
 }
