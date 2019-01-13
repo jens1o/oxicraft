@@ -94,4 +94,28 @@ impl ToVarint for i32 {
 
         result
     }
-}W
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Varint;
+    use crate::varint::ReadVarint;
+
+    #[test]
+    fn test_read_varint_from_vec() {
+        let mappings: Vec<(Varint, Vec<u8>)> = vec![
+            (0, vec![0x00]),
+            (1, vec![0x01]),
+            (127, vec![0x7f]),
+            (128, vec![0x80, 0x01]),
+            (255, vec![0xff, 0x01]),
+            (2147483647, vec![0xff, 0xff, 0xff, 0xff, 0x07]),
+            (-1, vec![0xff, 0xff, 0xff, 0xff, 0x0f]),
+            (-2147483648, vec![0x80, 0x80, 0x80, 0x80, 0x08]),
+        ];
+
+        for mut mapping in mappings {
+            assert_eq!(mapping.0, mapping.1.read_varint().unwrap());
+        }
+    }
+}
