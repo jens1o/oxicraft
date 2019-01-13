@@ -45,32 +45,30 @@ impl ReadVarint<io::Error> for TcpStream {
 impl ReadVarint<io::Error> for Vec<u8> {
     fn read_varint(&mut self) -> Result<Varint, io::Error> {
         // see https://wiki.vg/Protocol#VarInt_and_VarLong
-        let mut num_reads: u8 = 0;
+        let mut num_of_reads: u8 = 0;
         let mut result: Varint = 0;
 
         let mut vector = self.clone();
 
         vector.reverse();
-        dbg!(&vector);
 
         loop {
-            let item = vector.pop().unwrap();
-            dbg!(item);
+            let byte = vector.pop().unwrap();
+            let value = byte & 0b01111111;
+            result |= (value as i32) << (7 * num_of_reads);
 
-            num_reads += 1;
-            assert!(num_reads <= 5, "VarInts are never longer than 5 bytes!");
+            num_of_reads += 1;
+            if num_of_reads > 5 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "VarInt is too big",
+                ));
+            }
 
-            let value: i32 = (item as i32) & 0b01111111;
-            result |= dbg!(value << (7 * num_reads));
-
-            dbg!(result);
-
-            if dbg!(item & 0b10000000) == 0 {
+            if (byte & 0b10000000) == 0 {
                 break;
             }
         }
-
-        trace!("Number of reads on Vec<u8>: {}", num_reads);
 
         Ok(result)
     }
