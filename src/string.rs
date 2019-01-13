@@ -7,12 +7,12 @@ use std::io;
 pub type MinecraftString = String;
 
 pub trait ReadString<E> {
-    // reads a string from the buffer, throwing an error if the length is over `max_size`
+    /// reads a string from the buffer, throwing an error if the length is over `max_size`
     fn read_string(&mut self, max_size: u16) -> Result<MinecraftString, E>;
 }
 
 pub trait ToString {
-    fn to_string(&self) -> Vec<MinecraftString>;
+    fn to_string(&self) -> Vec<u8>;
 }
 
 impl ReadString<io::Error> for VecDeque<u8> {

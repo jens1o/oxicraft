@@ -8,7 +8,7 @@ mod short;
 mod string;
 mod varint;
 
-use crate::connection::Connection;
+use crate::connection::{Connection, HandshakeNextState};
 use log::LevelFilter;
 use simplelog::{Config, SimpleLogger};
 use std::io;
@@ -19,7 +19,16 @@ fn handle_connection(stream: TcpStream) -> io::Result<()> {
 
     info!("New connection from {}!", connection.ip_address);
 
-    connection.do_handshake()?;
+    let next_state = connection.do_handshake()?;
+
+    match next_state {
+        HandshakeNextState::Status => {
+            connection.send_status()?;
+        }
+        _ => {
+            // unimplemented yet
+        }
+    }
 
     Ok(())
 }

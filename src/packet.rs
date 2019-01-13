@@ -1,11 +1,26 @@
 use std::collections::VecDeque;
 use std::fmt;
+use std::net::TcpStream;
 
 #[derive(Debug)]
 pub struct Packet {
     pub length: u32,
     pub packet_id: i32,
     pub data: PacketData,
+}
+
+impl Packet {
+    pub fn new(packet_id: i32, data: PacketData) -> Packet {
+        Packet {
+            length: 0,
+            packet_id,
+            data,
+        }
+    }
+
+    pub fn send(&mut self, connection: TcpStream) {
+        // connection.write_all(mut buf: &[u8])
+    }
 }
 
 impl fmt::Display for Packet {
@@ -18,7 +33,7 @@ impl fmt::Display for Packet {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum PacketData {
     Command,
     Data(VecDeque<u8>),

@@ -7,6 +7,7 @@ use std::io::{self, Read};
 use std::net::{AddrParseError, IpAddr, SocketAddr, TcpStream};
 use std::u16;
 
+#[derive(PartialEq)]
 pub enum ConnectionState {
     Unknown,
     Handshaking,
@@ -39,11 +40,11 @@ impl Connection {
         })
     }
 
-    pub fn do_handshake(&mut self) -> io::Result<()> {
+    pub fn do_handshake(&mut self) -> io::Result<HandshakeNextState> {
         let data_packet = self.read_data_packet()?;
 
         // ensure it is the Handshake packet that was sent by the client
-        if data_packet.packet_id != 0x0 {
+        if data_packet.packet_id != 0x00 {
             return Err(io::Error::new(
                 io::ErrorKind::AlreadyExists,
                 "Client indicates it is not looking for a handshake, rather than an existing connection."
@@ -72,7 +73,14 @@ impl Connection {
 
             self.protocol_version = Some(protocol_version as u16);
 
-            let server_address = packet_data.read_string(255)?;
+            let mut server_address = packet_data.read_string(255)?;
+
+            info!("{:?}", server_address);
+
+            if server_address == "localhost".to_owned() {
+                // bugfix to avoid unnecessary error
+                server_address = "127.0.0.1".to_owned();
+            }
 
             let ip_addr: Result<IpAddr, AddrParseError> = server_address.parse();
 
@@ -105,7 +113,55 @@ impl Connection {
             info!("Next state: {:?}", next_state);
 
             trace!("Rest of data of handshake packet: {:?}", packet_data);
+
+            Ok(next_state)
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Handshake packet does not contain any data?!",
+            ))
         }
+    }
+
+    pub fn send_status(&mut self) -> io::Result<()> {
+        assert!(self.state == ConnectionState::Handshaking);
+
+        // read basic information from package
+        let length = self.tcp_stream.read_varint()?;
+        ensure_data_size(length)?;
+
+        // we now can ensure it is a positive number, thus cast it
+        let _length: u32 = length as u32;
+
+        let packet_id = self.tcp_stream.read_varint()?;
+
+        if packet_id != 0x00 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "The client needs to send a 0x00 package when sending the status.",
+            ));
+        }
+
+        // validation done.
+
+        let response = r#"{
+            "version": {
+                "name": "1.8.7",
+                "protocol": 47
+            },
+            "players": {
+                "max": 100,
+                "online": 5,
+                "sample": []
+            },
+            "description": {
+                "text": "Hello world"
+            },
+        }"#;
+
+        // TODO: Implement this.
+
+        unimplemented!();
 
         Ok(())
     }
