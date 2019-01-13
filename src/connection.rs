@@ -5,6 +5,7 @@ use crate::varint::ReadVarint;
 use std::collections::VecDeque;
 use std::io::{self, Read};
 use std::net::{AddrParseError, IpAddr, SocketAddr, TcpStream};
+use std::time::SystemTime;
 use std::u16;
 
 #[derive(PartialEq)]
@@ -41,6 +42,7 @@ impl Connection {
     }
 
     pub fn do_handshake(&mut self) -> io::Result<HandshakeNextState> {
+        let benchmark_start = SystemTime::now();
         let data_packet = self.read_data_packet()?;
 
         // ensure it is the Handshake packet that was sent by the client
@@ -74,8 +76,6 @@ impl Connection {
             self.protocol_version = Some(protocol_version as u16);
 
             let mut server_address = packet_data.read_string(255)?;
-
-            info!("{:?}", server_address);
 
             if server_address == "localhost".to_owned() {
                 // bugfix to avoid unnecessary error
@@ -113,6 +113,13 @@ impl Connection {
             info!("Next state: {:?}", next_state);
 
             trace!("Rest of data of handshake packet: {:?}", packet_data);
+
+            let benchmark_duration = SystemTime::now().duration_since(benchmark_start).unwrap();
+
+            info!(
+                "Handling of handshake package took {:?}.",
+                benchmark_duration
+            );
 
             Ok(next_state)
         } else {
