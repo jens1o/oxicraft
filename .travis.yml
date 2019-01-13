@@ -6,4 +6,4 @@ cache:
 env:
   global:
   - RUST_BACKTRACE=1
-- CARGO_INCREMENTAL=0
+  - CARGO_INCREMENTAL=0
