@@ -42,9 +42,7 @@ impl Connection {
                     io::ErrorKind::InvalidInput,
                     "Too great protocol version supplied.",
                 ));
-            }
-
-            if protocol_version < u16::min_value() as i32 {
+            } else if protocol_version < u16::min_value() as i32 {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "Too tiny protocol version supplied.",
