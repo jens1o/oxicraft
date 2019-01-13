@@ -27,7 +27,7 @@ fn main() -> io::Result<()> {
 
     info!("Started logging");
 
-    let listener = TcpListener::bind("127.0.0.1:25565")?;
+    let listener = TcpListener::bind("0.0.0.0:25565")?;
 
     info!("Started listening on {}", listener.local_addr()?);
 

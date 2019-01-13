@@ -14,29 +14,29 @@ pub trait ToVarint {
 impl ReadVarint<io::Error> for TcpStream {
     fn read_varint(&mut self) -> Result<Varint, io::Error> {
         // see https://wiki.vg/Protocol#VarInt_and_VarLong
-        let mut num_reads: u8 = 0;
+        let mut num_of_reads: u8 = 0;
         let mut result: Varint = 0;
 
         loop {
             let mut buffer = [0; 1];
             self.read_exact(&mut buffer)?;
-            dbg!(buffer);
             let byte = buffer[0];
-            dbg!(byte);
 
-            num_reads += 1;
+            let value = byte & 0b01111111;
+            result |= (value as i32) << (7 * num_of_reads);
 
-            assert!(num_reads <= 5, "VarInts are never longer than 5 bytes!");
+            num_of_reads += 1;
+            if num_of_reads > 5 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "VarInt is too big",
+                ));
+            }
 
-            let value: i32 = (byte as i32) & 0b01111111;
-            result |= dbg!(value << (7 * num_reads));
-            dbg!(result);
-
-            if dbg!(byte & 0b10000000) == 0 {
+            if (byte & 0b10000000) == 0 {
                 break;
             }
         }
-        trace!("Number of reads on tcp stream: {}", num_reads);
 
         Ok(result)
     }
@@ -69,6 +69,8 @@ impl ReadVarint<io::Error> for Vec<u8> {
                 break;
             }
         }
+
+        //FIXME: We need to seek the Vec here to skip the bytes we already processed.
 
         Ok(result)
     }
