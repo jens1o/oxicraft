@@ -1,9 +1,10 @@
 use crate::packet::{Packet, PacketData};
+use crate::short::ReadUnsignedShort;
 use crate::string::ReadString;
 use crate::varint::ReadVarint;
 use std::collections::VecDeque;
 use std::io::{self, Read};
-use std::net::{SocketAddr, TcpStream};
+use std::net::{AddrParseError, IpAddr, SocketAddr, TcpStream};
 use std::u16;
 
 pub enum ConnectionState {
@@ -11,11 +12,20 @@ pub enum ConnectionState {
     Handshaking,
 }
 
+impl Default for ConnectionState {
+    fn default() -> Self {
+        ConnectionState::Unknown
+    }
+}
+
 pub struct Connection {
     pub ip_address: SocketAddr,
     pub tcp_stream: TcpStream,
     pub state: ConnectionState,
+    /// the protocol version specified by the client
     pub protocol_version: Option<u16>,
+    /// the server address used to connect to this specified by the client
+    pub server_address: Option<SocketAddr>,
 }
 
 impl Connection {
@@ -23,8 +33,9 @@ impl Connection {
         Ok(Connection {
             ip_address: stream.peer_addr()?,
             tcp_stream: stream,
-            state: ConnectionState::Unknown,
-            protocol_version: None,
+            state: Default::default(),
+            protocol_version: Default::default(),
+            server_address: Default::default(),
         })
     }
 
@@ -62,7 +73,36 @@ impl Connection {
             self.protocol_version = Some(protocol_version as u16);
 
             let server_address = packet_data.read_string(255)?;
-            trace!("Client used {:?} to connect.", server_address);
+
+            let ip_addr: Result<IpAddr, AddrParseError> = server_address.parse();
+
+            if ip_addr.is_err() {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Invalid ip address given.",
+                ));
+            }
+
+            let ip_addr = ip_addr.unwrap();
+            let port = packet_data.read_unsigned_short()?;
+            let socket_addr = SocketAddr::new(ip_addr, port);
+
+            self.server_address = Some(socket_addr);
+
+            trace!("Client used {} to connect.", &socket_addr);
+
+            let next_state = match packet_data.read_varint()? {
+                1 => HandshakeNextState::Status,
+                2 => HandshakeNextState::Login,
+                x => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("The next state may only be 1 or 2, {} given.", x),
+                    ));
+                }
+            };
+
+            info!("Next state: {:?}", next_state);
 
             trace!("Rest of data of handshake packet: {:?}", packet_data);
         }
@@ -92,6 +132,12 @@ impl Connection {
 
         Ok(packet)
     }
+}
+
+#[derive(Debug)]
+pub enum HandshakeNextState {
+    Status = 1,
+    Login = 2,
 }
 
 #[inline]

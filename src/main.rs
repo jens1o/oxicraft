@@ -4,6 +4,7 @@ extern crate simplelog;
 
 mod connection;
 mod packet;
+mod short;
 mod string;
 mod varint;
 
