@@ -41,3 +41,21 @@ impl ReadString<io::Error> for VecDeque<u8> {
         Ok(result)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::ReadString;
+    use std::collections::VecDeque;
+
+    #[test]
+    fn read_string() {
+        let vector = vec![9, 108, 111, 99, 97, 108, 104, 111, 115, 116];
+        assert_eq!("localhost", VecDeque::from(vector).read_string(9).unwrap());
+    }
+
+    #[test]
+    fn read_string_should_err_if_too_long() {
+        let vector = vec![111, 108, 111, 99, 97, 108, 104, 111, 115, 116];
+        assert!(VecDeque::from(vector).read_string(9).is_err());
+    }
+}
