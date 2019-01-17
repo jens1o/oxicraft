@@ -1,5 +1,5 @@
 use crate::connection::ensure_data_size;
-use crate::varint::{ReadVarint, Varint};
+use crate::varint::ReadVarint;
 use std::char;
 use std::collections::VecDeque;
 use std::io;

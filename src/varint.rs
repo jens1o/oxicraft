@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
-use std::i32;
 use std::io::{self, Read};
 use std::net::TcpStream;
+use std::{i32, u8};
 
 pub type Varint = i32;
 
@@ -9,8 +9,8 @@ pub trait ReadVarint<E> {
     fn read_varint(&mut self) -> Result<Varint, E>;
 }
 
-pub trait ToVarint {
-    fn to_varint(&self) -> Vec<Varint>;
+pub trait WriteVarint {
+    fn write_varint(&self) -> Vec<u8>;
 }
 
 impl ReadVarint<io::Error> for TcpStream {
@@ -72,19 +72,31 @@ impl ReadVarint<io::Error> for VecDeque<u8> {
     }
 }
 
-impl ToVarint for i32 {
-    fn to_varint(&self) -> Vec<Varint> {
-        let mut remaining = *self;
+impl WriteVarint for i32 {
+    fn write_varint(&self) -> Vec<u8> {
         let mut result = Vec::with_capacity(7);
 
+        let mut value = *self;
+
+        let mut num_iterations = 0;
+
         loop {
-            let part = remaining & 0x7F; // First 7 bits
-            remaining >>= 7;
-            if remaining == 0 {
-                result.push(part);
+            let mut temp = value & 0b01111111;
+            // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
+            value = value >> 7;
+            if value != 0 {
+                temp |= 0b10000000;
+            }
+
+            result.push(temp as u8);
+
+            num_iterations += 1;
+            if num_iterations > 7 {
+                panic!("Too many iterations!");
+            }
+
+            if value == 0 {
                 break;
-            } else {
-                result.push(part | 0x80);
             }
         }
 
@@ -95,7 +107,7 @@ impl ToVarint for i32 {
 #[cfg(test)]
 mod tests {
     use super::Varint;
-    use crate::varint::ReadVarint;
+    use crate::varint::{ReadVarint, WriteVarint};
     use std::collections::VecDeque;
 
     #[test]
@@ -113,6 +125,34 @@ mod tests {
 
         for mapping in mappings {
             assert_eq!(mapping.0, VecDeque::from(mapping.1).read_varint().unwrap());
+        }
+    }
+
+    #[test]
+    fn test_write_vec_from_varint_negative() {
+        let mappings: Vec<(Varint, Vec<u8>)> = vec![
+            (-1, vec![0xff, 0xff, 0xff, 0xff, 0x0f]),
+            (-2147483648, vec![0x80, 0x80, 0x80, 0x80, 0x08]),
+        ];
+
+        for mapping in mappings {
+            assert_eq!(mapping.1, mapping.0.write_varint());
+        }
+    }
+
+    #[test]
+    fn test_write_vec_from_varint_positive() {
+        let mappings: Vec<(Varint, Vec<u8>)> = vec![
+            (0, vec![0x00]),
+            (1, vec![0x01]),
+            (127, vec![0x7f]),
+            (128, vec![0x80, 0x01]),
+            (255, vec![0xff, 0x01]),
+            (2147483647, vec![0xff, 0xff, 0xff, 0xff, 0x07]),
+        ];
+
+        for mapping in mappings {
+            assert_eq!(mapping.1, mapping.0.write_varint());
         }
     }
 }
