@@ -3,10 +3,32 @@ use crate::short::ReadUnsignedShort;
 use crate::string::ReadString;
 use crate::varint::ReadVarint;
 use std::collections::VecDeque;
+use std::fmt;
 use std::io::{self, Read};
 use std::net::{AddrParseError, IpAddr, SocketAddr, TcpStream};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::SystemTime;
 use std::u16;
+
+static CONNECTION_COUNTER: AtomicUsize = AtomicUsize::new(1);
+
+pub struct ConnectionId {
+    pub value: usize,
+}
+
+impl ConnectionId {
+    pub fn new() -> ConnectionId {
+        ConnectionId {
+            value: CONNECTION_COUNTER.fetch_add(1, Ordering::SeqCst),
+        }
+    }
+}
+
+impl fmt::Display for ConnectionId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "#{}", self.value)
+    }
+}
 
 #[derive(PartialEq)]
 pub enum ConnectionState {
@@ -21,6 +43,7 @@ impl Default for ConnectionState {
 }
 
 pub struct Connection {
+    pub connection_id: ConnectionId,
     pub ip_address: SocketAddr,
     pub tcp_stream: TcpStream,
     pub state: ConnectionState,
@@ -33,6 +56,7 @@ pub struct Connection {
 impl Connection {
     pub fn from_tcp_stream(stream: TcpStream) -> io::Result<Connection> {
         Ok(Connection {
+            connection_id: ConnectionId::new(),
             ip_address: stream.peer_addr()?,
             tcp_stream: stream,
             state: Default::default(),
@@ -42,6 +66,11 @@ impl Connection {
     }
 
     pub fn do_handshake(&mut self) -> io::Result<HandshakeNextState> {
+        info!(
+            "Processing handshake for connection {}.",
+            self.connection_id
+        );
+
         let benchmark_start = SystemTime::now();
         let data_packet = self.read_data_packet()?;
 
@@ -149,6 +178,11 @@ impl Connection {
             ));
         }
 
+        info!(
+            "Sending status message to connection {}.",
+            self.connection_id
+        );
+
         // validation done.
 
         let response = r#"{
@@ -206,6 +240,7 @@ pub enum HandshakeNextState {
 #[inline]
 pub fn ensure_data_size(size: i32) -> io::Result<()> {
     if size <= 0 {
+        warn!(r#"Received "data" with size of {}."#, size);
         Err(io::Error::new(
             io::ErrorKind::InvalidData,
             "Received packet with data size of zero (or less).",

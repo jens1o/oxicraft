@@ -17,7 +17,10 @@ use std::net::{TcpListener, TcpStream};
 fn handle_connection(stream: TcpStream) -> io::Result<()> {
     let mut connection = Connection::from_tcp_stream(stream)?;
 
-    info!("New connection from {}!", connection.ip_address);
+    info!(
+        "New connection from {} ({})!",
+        connection.ip_address, connection.connection_id
+    );
 
     let next_state = connection.do_handshake()?;
 
