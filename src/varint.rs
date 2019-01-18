@@ -104,6 +104,38 @@ impl WriteVarint for i32 {
     }
 }
 
+impl WriteVarint for usize {
+    fn write_varint(&self) -> Vec<u8> {
+        let mut result = Vec::with_capacity(7);
+
+        let mut value = *self;
+
+        let mut num_iterations = 0;
+
+        loop {
+            let mut temp = value & 0b01111111;
+            // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
+            value = value >> 7;
+            if value != 0 {
+                temp |= 0b10000000;
+            }
+
+            result.push(temp as u8);
+
+            num_iterations += 1;
+            if num_iterations > 7 {
+                panic!("Too many iterations!");
+            }
+
+            if value == 0 {
+                break;
+            }
+        }
+
+        result
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Varint;

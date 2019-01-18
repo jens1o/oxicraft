@@ -1,6 +1,6 @@
 use crate::packet::{Packet, PacketData};
 use crate::short::ReadUnsignedShort;
-use crate::string::ReadString;
+use crate::string::{ReadString, WriteString};
 use crate::varint::ReadVarint;
 use std::collections::VecDeque;
 use std::fmt;
@@ -162,28 +162,9 @@ impl Connection {
     pub fn send_status(&mut self) -> io::Result<()> {
         assert!(self.state == ConnectionState::Handshaking);
 
-        // read basic information from package
-        let length = self.tcp_stream.read_varint()?;
-        ensure_data_size(length)?;
+        info!("Sending status to connection {}.", self.connection_id);
 
-        // we now can ensure it is a positive number, thus cast it
-        let _length: u32 = length as u32;
-
-        let packet_id = self.tcp_stream.read_varint()?;
-
-        if packet_id != 0x00 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "The client needs to send a 0x00 package when sending the status.",
-            ));
-        }
-
-        info!(
-            "Sending status message to connection {}.",
-            self.connection_id
-        );
-
-        // validation done.
+        self.tcp_stream.read_varint()?;
 
         let response = r#"{
             "version": {
@@ -202,9 +183,16 @@ impl Connection {
 
         // TODO: Implement this.
 
-        unimplemented!();
+        let response_bytes = response.write_string();
 
-        // Ok(())
+        let response_packet: Packet =
+            Packet::from_id_and_data(0x00, PacketData::Data(response_bytes.into()));
+
+        response_packet.send(&mut self.tcp_stream)?;
+
+        info!("Sent status to {}.", self.connection_id);
+
+        Ok(())
     }
 
     pub fn read_data_packet(&mut self) -> io::Result<Packet> {
@@ -212,11 +200,11 @@ impl Connection {
         ensure_data_size(length)?;
 
         // we now can ensure it is a positive number, thus cast it
-        let length: u32 = length as u32;
+        let length: usize = length as usize;
 
         let packet_id = self.tcp_stream.read_varint()?;
 
-        let mut buffer = vec![0; length as usize];
+        let mut buffer = vec![0; length];
         self.tcp_stream.read_exact(&mut buffer)?;
 
         let packet = Packet {

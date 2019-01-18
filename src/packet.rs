@@ -1,16 +1,18 @@
+use crate::varint::WriteVarint;
 use std::collections::VecDeque;
 use std::fmt;
+use std::io::{self, Write};
 use std::net::TcpStream;
 
 #[derive(Debug)]
 pub struct Packet {
-    pub length: u32,
+    pub length: usize,
     pub packet_id: i32,
     pub data: PacketData,
 }
 
 impl Packet {
-    pub fn new(packet_id: i32, data: PacketData) -> Packet {
+    pub fn from_id_and_data(packet_id: i32, data: PacketData) -> Packet {
         Packet {
             length: 0,
             packet_id,
@@ -18,8 +20,24 @@ impl Packet {
         }
     }
 
-    pub fn send(&mut self, connection: TcpStream) {
-        // connection.write_all(mut buf: &[u8])
+    pub fn send(&self, connection: &mut TcpStream) -> io::Result<()> {
+        let packet_id_varint = self.packet_id.write_varint();
+
+        let length = packet_id_varint.len() + self.data.len();
+
+        let length_varint = length.write_varint();
+
+        // acquiring more capacity, because we also need to have enough space for our varint
+        let mut write_buffer: Vec<u8> = Vec::with_capacity(length + length_varint.len());
+
+        // The packet consists of a Varint that represents the size of this package, the package id and the data.
+
+        write_buffer.extend(length_varint);
+        write_buffer.extend(packet_id_varint);
+
+        write_buffer.extend(self.data.to_bytes());
+
+        connection.write_all(dbg!(&mut write_buffer))
     }
 }
 
@@ -38,4 +56,23 @@ pub enum PacketData {
     Command,
     Data(VecDeque<u8>),
     Message(String),
+}
+
+impl PacketData {
+    pub fn len(&self) -> usize {
+        if let PacketData::Data(packet_data) = self {
+            return packet_data.len();
+        }
+
+        unimplemented!();
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        if let PacketData::Data(packet_data) = self {
+            // TODO: Optimize this.
+            return packet_data.iter().map(|x| *x).collect::<Vec<_>>();
+        }
+
+        unimplemented!();
+    }
 }

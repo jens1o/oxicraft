@@ -1,5 +1,5 @@
 use crate::connection::ensure_data_size;
-use crate::varint::ReadVarint;
+use crate::varint::{ReadVarint, WriteVarint};
 use std::char;
 use std::collections::VecDeque;
 use std::io;
@@ -11,8 +11,8 @@ pub trait ReadString<E> {
     fn read_string(&mut self, max_size: u16) -> Result<MinecraftString, E>;
 }
 
-pub trait ToString {
-    fn to_string(&self) -> Vec<u8>;
+pub trait WriteString {
+    fn write_string(&self) -> Vec<u8>;
 }
 
 impl ReadString<io::Error> for VecDeque<u8> {
@@ -40,6 +40,34 @@ impl ReadString<io::Error> for VecDeque<u8> {
         }
 
         Ok(result)
+    }
+}
+
+impl WriteString for String {
+    fn write_string(&self) -> Vec<u8> {
+        let length_varint = (self.len() as i32).write_varint();
+
+        let mut result = Vec::with_capacity(self.len() + length_varint.len());
+
+        result.extend(length_varint);
+
+        self.chars().for_each(|x| result.push(x as u8));
+
+        result
+    }
+}
+
+impl WriteString for str {
+    fn write_string(&self) -> Vec<u8> {
+        let length_varint = (self.len() as i32).write_varint();
+
+        let mut result = Vec::with_capacity(self.len() + length_varint.len());
+
+        result.extend(length_varint);
+
+        self.chars().for_each(|x| result.push(x as u8));
+
+        result
     }
 }
 
