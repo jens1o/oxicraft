@@ -73,13 +73,19 @@ impl WriteString for str {
 
 #[cfg(test)]
 mod tests {
-    use super::ReadString;
+    use super::{ReadString, WriteString};
     use std::collections::VecDeque;
 
     #[test]
     fn read_string() {
         let vector = vec![9, 108, 111, 99, 97, 108, 104, 111, 115, 116];
         assert_eq!("localhost", VecDeque::from(vector).read_string(9).unwrap());
+    }
+
+    #[test]
+    fn write_string() {
+        let expected = vec![9, 108, 111, 99, 97, 108, 104, 111, 115, 116];
+        assert_eq!(expected, "localhost".write_string());
     }
 
     #[test]
