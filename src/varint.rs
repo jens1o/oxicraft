@@ -82,7 +82,7 @@ impl WriteVarint for i32 {
 
         loop {
             let mut temp = value & 0b01111111;
-            // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
+            // FIXME: It should say >>> here, meaning the sign bit is shifted with the rest of the number rather than being left alone, but Rust does not provide >>>.
             value = value >> 7;
             if value != 0 {
                 temp |= 0b10000000;
@@ -114,7 +114,7 @@ impl WriteVarint for usize {
 
         loop {
             let mut temp = value & 0b01111111;
-            // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
+            // FIXME: It should say >>> here, meaning the sign bit is shifted with the rest of the number rather than being left alone, but Rust does not provide >>>.
             value = value >> 7;
             if value != 0 {
                 temp |= 0b10000000;
