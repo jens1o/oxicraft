@@ -76,13 +76,12 @@ impl WriteVarint for i32 {
     fn write_varint(&self) -> Vec<u8> {
         let mut result = Vec::with_capacity(7);
 
-        let mut value = *self;
+        let mut value = *self as u32;
 
         let mut num_iterations = 0;
 
         loop {
             let mut temp = value & 0b01111111;
-            // FIXME: It should say >>> here, meaning the sign bit is shifted with the rest of the number rather than being left alone, but Rust does not provide >>>.
             value = value >> 7;
             if value != 0 {
                 temp |= 0b10000000;
