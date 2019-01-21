@@ -145,7 +145,7 @@ impl Connection {
 
             let benchmark_duration = SystemTime::now().duration_since(benchmark_start).unwrap();
 
-            info!(
+            trace!(
                 "Handling of handshake package took {:?}.",
                 benchmark_duration
             );
@@ -161,6 +161,7 @@ impl Connection {
 
     pub fn send_status(&mut self) -> io::Result<()> {
         assert!(self.state == ConnectionState::Handshaking);
+        let benchmark_start = SystemTime::now();
 
         info!("Sending status to connection {}.", self.connection_id);
 
@@ -168,8 +169,8 @@ impl Connection {
 
         let response = r#"{
             "version": {
-                "name": "1.8.7",
-                "protocol": 47
+                "name": "1.13.1",
+                "protocol": 404
             },
             "players": {
                 "max": 100,
@@ -177,8 +178,8 @@ impl Connection {
                 "sample": []
             },
             "description": {
-                "text": "Hello world"
-            },
+                "text": "Hello world I'm cool"
+            }
         }"#;
 
         // TODO: Implement this.
@@ -190,7 +191,11 @@ impl Connection {
 
         response_packet.send(&mut self.tcp_stream)?;
 
-        info!("Sent status to {}.", self.connection_id);
+        let benchmark_duration = SystemTime::now().duration_since(benchmark_start).unwrap();
+        info!(
+            "Sent status to {} (took {:?}).",
+            self.connection_id, benchmark_duration
+        );
 
         Ok(())
     }

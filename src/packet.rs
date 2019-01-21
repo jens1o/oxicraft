@@ -37,7 +37,7 @@ impl Packet {
 
         write_buffer.extend(self.data.to_bytes());
 
-        connection.write_all(dbg!(&mut write_buffer))
+        connection.write_all(&mut write_buffer)
     }
 }
 
