@@ -1,14 +1,19 @@
 #[macro_use]
 extern crate log;
+extern crate serde_json;
 extern crate simplelog;
+#[macro_use]
+extern crate serde_derive;
 
 mod connection;
+mod long;
 mod packet;
 mod short;
 mod string;
 mod varint;
 
-use crate::connection::{Connection, HandshakeNextState};
+use crate::connection::handshake::HandshakeNextState;
+use crate::connection::Connection;
 use log::LevelFilter;
 use simplelog::{Config, SimpleLogger};
 use std::io;

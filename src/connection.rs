@@ -1,3 +1,6 @@
+pub mod handshake;
+
+use crate::long::ReadLong;
 use crate::packet::{Packet, PacketData};
 use crate::short::ReadUnsignedShort;
 use crate::string::{ReadString, WriteString};
@@ -65,7 +68,7 @@ impl Connection {
         })
     }
 
-    pub fn do_handshake(&mut self) -> io::Result<HandshakeNextState> {
+    pub fn do_handshake(&mut self) -> io::Result<handshake::HandshakeNextState> {
         info!(
             "Processing handshake for connection {}.",
             self.connection_id
@@ -129,8 +132,8 @@ impl Connection {
             trace!("Client used {} to connect.", &socket_addr);
 
             let next_state = match packet_data.read_varint()? {
-                1 => HandshakeNextState::Status,
-                2 => HandshakeNextState::Login,
+                1 => handshake::HandshakeNextState::Status,
+                2 => handshake::HandshakeNextState::Login,
                 x => {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidInput,
@@ -165,24 +168,10 @@ impl Connection {
 
         info!("Sending status to connection {}.", self.connection_id);
 
-        self.tcp_stream.read_varint()?;
+        // the package id for this(empty) package is 0x00.
+        assert!(self.tcp_stream.read_varint()? == 0x00);
 
-        let response = r#"{
-            "version": {
-                "name": "1.13.1",
-                "protocol": 404
-            },
-            "players": {
-                "max": 100,
-                "online": 5,
-                "sample": []
-            },
-            "description": {
-                "text": "Hello world I'm cool"
-            }
-        }"#;
-
-        // TODO: Implement this.
+        let response = serde_json::to_string(&handshake::mock_slp())?.to_string();
 
         let response_bytes = response.write_string();
 
@@ -196,6 +185,20 @@ impl Connection {
             "Sent status to {} (took {:?}).",
             self.connection_id, benchmark_duration
         );
+
+        // now, the client sends a data packet (basically to ping us), with a long we need to pong back.
+
+        unimplemented!();
+        let ping_request_packet = self.read_data_packet()?;
+
+        if let PacketData::Data(mut ping_packet_data) = ping_request_packet.data {
+            let ping_test = ping_packet_data.read_long();
+        } else {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Must be a data packet when having a ping packet!",
+            ));
+        }
 
         Ok(())
     }
@@ -222,12 +225,6 @@ impl Connection {
 
         Ok(packet)
     }
-}
-
-#[derive(Debug)]
-pub enum HandshakeNextState {
-    Status = 1,
-    Login = 2,
 }
 
 #[inline]
