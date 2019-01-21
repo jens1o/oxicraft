@@ -106,7 +106,6 @@ impl WriteVarint for usize {
 
         loop {
             let mut temp = value & 0b01111111;
-            // FIXME: It should say >>> here, meaning the sign bit is shifted with the rest of the number rather than being left alone, but Rust does not provide >>>.
             value = value >> 7;
             if value != 0 {
                 temp |= 0b10000000;
@@ -167,6 +166,22 @@ mod tests {
     #[test]
     fn test_write_vec_from_varint_positive() {
         let mappings: Vec<(Varint, Vec<u8>)> = vec![
+            (0, vec![0x00]),
+            (1, vec![0x01]),
+            (127, vec![0x7f]),
+            (128, vec![0x80, 0x01]),
+            (255, vec![0xff, 0x01]),
+            (2147483647, vec![0xff, 0xff, 0xff, 0xff, 0x07]),
+        ];
+
+        for mapping in mappings {
+            assert_eq!(mapping.1, mapping.0.write_varint());
+        }
+    }
+
+    #[test]
+    fn test_write_vec_from_usize() {
+        let mappings: Vec<(usize, Vec<u8>)> = vec![
             (0, vec![0x00]),
             (1, vec![0x01]),
             (127, vec![0x7f]),
