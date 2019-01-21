@@ -78,8 +78,6 @@ impl WriteVarint for i32 {
 
         let mut value = *self as u32;
 
-        let mut num_iterations = 0;
-
         loop {
             let mut temp = value & 0b01111111;
             value = value >> 7;
@@ -88,11 +86,6 @@ impl WriteVarint for i32 {
             }
 
             result.push(temp as u8);
-
-            num_iterations += 1;
-            if num_iterations > 7 {
-                panic!("Too many iterations!");
-            }
 
             if value == 0 {
                 break;
