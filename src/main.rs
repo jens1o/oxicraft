@@ -12,8 +12,7 @@ mod short;
 mod string;
 mod varint;
 
-use crate::connection::handshake::HandshakeNextState;
-use crate::connection::Connection;
+use crate::connection::{Connection, handshake::HandshakeNextState};
 use log::LevelFilter;
 use simplelog::{Config, SimpleLogger};
 use std::io;
