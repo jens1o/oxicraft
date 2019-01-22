@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::io;
 
-pub type Long = i32;
+pub type Long = i64;
 
 pub trait ReadLong<E> {
     fn read_long(&mut self) -> Result<Long, E>;

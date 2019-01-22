@@ -1,6 +1,5 @@
 use crate::short::UnsignedShort;
 use crate::string::MinecraftString;
-use serde::Serialize;
 
 #[derive(Debug)]
 pub enum HandshakeNextState {
