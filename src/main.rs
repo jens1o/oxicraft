@@ -12,7 +12,7 @@ mod short;
 mod string;
 mod varint;
 
-use crate::connection::{Connection, handshake::HandshakeNextState};
+use crate::connection::{handshake::HandshakeNextState, Connection};
 use log::LevelFilter;
 use simplelog::{Config, SimpleLogger};
 use std::io;
@@ -43,11 +43,11 @@ fn handle_connection(stream: TcpStream) -> io::Result<()> {
 fn main() -> io::Result<()> {
     SimpleLogger::init(LevelFilter::Trace, Config::default()).unwrap();
 
-    info!("Started logging");
+    info!("Started logging.");
 
     let listener = TcpListener::bind("0.0.0.0:25565")?;
 
-    info!("Started listening on {}", listener.local_addr()?);
+    info!("Started listening on {}.", listener.local_addr()?);
 
     for incoming_stream in listener.incoming() {
         handle_connection(incoming_stream?)?;

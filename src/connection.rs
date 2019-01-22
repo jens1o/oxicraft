@@ -142,7 +142,7 @@ impl Connection {
                 }
             };
 
-            info!("Next state: {:?}", next_state);
+            info!("Next state of {}: {:?}", self.connection_id, next_state);
 
             trace!("Rest of data of handshake packet: {:?}", packet_data);
 
@@ -178,6 +178,7 @@ impl Connection {
         let response_packet: Packet =
             Packet::from_id_and_data(0x00, PacketData::Data(response_bytes.into()));
 
+        // FIXME: We need to discard the current read buffer now to avoid confusion when reading the PING packet(0x01).
         response_packet.send(&mut self.tcp_stream)?;
 
         let benchmark_duration = SystemTime::now().duration_since(benchmark_start).unwrap();
@@ -188,11 +189,14 @@ impl Connection {
 
         // now, the client sends a data packet (basically to ping us), with a long we need to pong back.
 
-        unimplemented!();
         let ping_request_packet = self.read_data_packet()?;
 
+        dbg!(&ping_request_packet);
+
         if let PacketData::Data(mut ping_packet_data) = ping_request_packet.data {
-            let ping_test = ping_packet_data.read_long();
+            let ping_test = ping_packet_data.read_long()?;
+
+            dbg!(ping_test);
         } else {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -211,6 +215,12 @@ impl Connection {
         let length: usize = length as usize;
 
         let packet_id = self.tcp_stream.read_varint()?;
+
+        trace!(
+            "Reading {} bytes to read content of package with id {:#X}.",
+            length,
+            packet_id
+        );
 
         let mut buffer = vec![0; length];
         self.tcp_stream.read_exact(&mut buffer)?;

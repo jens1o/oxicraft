@@ -13,9 +13,17 @@ pub trait WriteLong {
 
 impl ReadLong<io::Error> for VecDeque<u8> {
     fn read_long(&mut self) -> Result<Long, io::Error> {
-        // TODO: Implement this
+        let mut result: Long = 0;
 
-        Ok(0)
+        for _ in 1..=8 {
+            result += self
+                .pop_front()
+                .expect("Vector needs to have 8 bytes to decode a long(i64).")
+                as i64;
+            result = result << 8;
+        }
+
+        Ok(result)
     }
 }
 
