@@ -177,7 +177,6 @@ impl Connection {
         let response_packet: Packet =
             Packet::from_id_and_data(0x00, PacketData::Data(response_bytes.into()));
 
-        // FIXME: We need to discard the current read buffer now to avoid confusion when reading the PING packet(0x01).
         response_packet.send(&mut self.tcp_stream)?;
 
         let benchmark_duration = SystemTime::now().duration_since(benchmark_start).unwrap();
