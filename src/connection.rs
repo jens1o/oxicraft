@@ -145,7 +145,9 @@ impl Connection {
 
             info!("Next state of {}: {:?}", self.connection_id, next_state);
 
-            trace!("Rest of data of handshake packet: {:?}", packet_data);
+            if packet_data.len() != 0 {
+                warn!("The handshake packet sent by the client contains more data than expected. Rest of data: {:?}", packet_data);
+            }
 
             let benchmark_duration = SystemTime::now().duration_since(benchmark_start).unwrap();
 
