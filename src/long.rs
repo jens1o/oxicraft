@@ -27,25 +27,54 @@ impl ReadLong<io::Error> for VecDeque<u8> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::UnsignedShort;
-//     use crate::short::ReadUnsignedShort;
-//     use std::collections::VecDeque;
+impl WriteLong for i64 {
+    fn write_long(&self) -> Vec<u8> {
+        let mut result = Vec::with_capacity(8);
 
-//     #[test]
-//     fn test_read_unsigned_short_on_vec() {
-//         let mappings: Vec<(UnsignedShort, Vec<u8>)> = vec![
-//             (25565, vec![99, 221]),
-//             (25555, vec![99, 211]),
-//             (24555, vec![95, 235]),
-//         ];
+        let mut value = *self;
 
-//         for mapping in mappings {
-//             assert_eq!(
-//                 mapping.0,
-//                 VecDeque::from(mapping.1).read_unsigned_short().unwrap()
-//             );
-//         }
-//     }
-// }
+        for _ in 1..=8 {
+            let mut temp = value & 0b11111111;
+
+            value = value >> 7;
+            if value != 0 {
+                temp |= 0b10000000;
+            }
+
+            result.push(temp as u8);
+        }
+
+        result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Long, ReadLong, WriteLong};
+    use std::collections::VecDeque;
+
+    #[test]
+    fn test_read_long_on_vec() {
+        let mappings: Vec<(Long, Vec<u8>)> = vec![
+            (632469504, vec![0, 0, 0, 0, 0, 37, 178, 184]),
+            (631943936, vec![0, 0, 0, 0, 0, 37, 170, 179]),
+            (630137600, vec![0, 0, 0, 0, 0, 37, 143, 35]),
+        ];
+
+        for mapping in mappings {
+            assert_eq!(mapping.0, VecDeque::from(mapping.1).read_long().unwrap());
+        }
+    }
+    #[test]
+    fn test_write_long_to_vec() {
+        let mappings: Vec<(Long, Vec<u8>)> = vec![
+            (632469504, vec![0, 0, 0, 0, 0, 37, 178, 184]),
+            (631943936, vec![0, 0, 0, 0, 0, 37, 170, 179]),
+            (630137600, vec![0, 0, 0, 0, 0, 37, 143, 35]),
+        ];
+
+        for mapping in mappings {
+            assert_eq!(mapping.1, mapping.0.write_long());
+        }
+    }
+}

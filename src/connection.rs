@@ -1,10 +1,9 @@
 pub mod handshake;
 
-use crate::long::ReadLong;
 use crate::packet::{Packet, PacketData};
 use crate::short::ReadUnsignedShort;
 use crate::string::{ReadString, WriteString};
-use crate::varint::ReadVarint;
+use crate::varint::{ReadVarint, WriteVarint};
 use std::collections::VecDeque;
 use std::fmt;
 use std::io::{self, Read};
@@ -169,9 +168,9 @@ impl Connection {
         info!("Sending status to connection {}.", self.connection_id);
 
         // the package id for this(empty) package is 0x00.
-        assert!(self.tcp_stream.read_varint()? == 0x00);
+        assert!(self.read_data_packet()?.packet_id == 0x00);
 
-        let response = serde_json::to_string(&handshake::mock_slp())?.to_string();
+        let response = serde_json::to_string(&handshake::mock_slp())?.to_owned();
 
         let response_bytes = response.write_string();
 
@@ -189,19 +188,12 @@ impl Connection {
 
         // now, the client sends a data packet (basically to ping us), with a long we need to pong back.
 
-        let ping_request_packet = self.read_data_packet()?;
+        if let PacketData::Data(packet_data) = self.read_data_packet()?.data {
+            let response_packet = Packet::from_id_and_data(0x01, PacketData::Data(packet_data));
 
-        dbg!(&ping_request_packet);
-
-        if let PacketData::Data(mut ping_packet_data) = ping_request_packet.data {
-            let ping_test = ping_packet_data.read_long()?;
-
-            dbg!(ping_test);
+            response_packet.send(&mut self.tcp_stream)?;
         } else {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Must be a data packet when having a ping packet!",
-            ));
+            unreachable!();
         }
 
         Ok(())
@@ -216,13 +208,16 @@ impl Connection {
 
         let packet_id = self.tcp_stream.read_varint()?;
 
+        // read the package contents. We need to read the amount that was given, without the package id.
+        let data_length = length - packet_id.write_varint().len();
+
         trace!(
             "Reading {} bytes to read content of package with id {:#X}.",
-            length,
+            data_length,
             packet_id
         );
 
-        let mut buffer = vec![0; length];
+        let mut buffer = vec![0; data_length];
         self.tcp_stream.read_exact(&mut buffer)?;
 
         let packet = Packet {
