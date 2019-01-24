@@ -187,11 +187,10 @@ impl Connection {
         );
 
         // now, the client sends a data packet (basically to ping us), with a long we need to pong back.
-
         if let PacketData::Data(packet_data) = self.read_data_packet()?.data {
-            let response_packet = Packet::from_id_and_data(0x01, PacketData::Data(packet_data));
+            let pong_packet = Packet::from_id_and_data(0x01, PacketData::Data(packet_data));
 
-            response_packet.send(&mut self.tcp_stream)?;
+            pong_packet.send(&mut self.tcp_stream)?;
         } else {
             unreachable!();
         }
