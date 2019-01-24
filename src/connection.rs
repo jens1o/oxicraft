@@ -46,6 +46,7 @@ impl Default for ConnectionState {
 
 pub struct Connection {
     pub connection_id: ConnectionId,
+    pub start_time: SystemTime,
     pub ip_address: SocketAddr,
     pub tcp_stream: TcpStream,
     pub state: ConnectionState,
@@ -59,6 +60,7 @@ impl Connection {
     pub fn from_tcp_stream(stream: TcpStream) -> io::Result<Connection> {
         Ok(Connection {
             connection_id: ConnectionId::new(),
+            start_time: SystemTime::now(),
             ip_address: stream.peer_addr()?,
             tcp_stream: stream,
             state: Default::default(),

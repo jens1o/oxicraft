@@ -17,6 +17,7 @@ use log::LevelFilter;
 use simplelog::{Config, SimpleLogger};
 use std::io;
 use std::net::{TcpListener, TcpStream};
+use std::time::SystemTime;
 
 fn handle_connection(stream: TcpStream) -> io::Result<()> {
     let mut connection = Connection::from_tcp_stream(stream)?;
@@ -36,6 +37,14 @@ fn handle_connection(stream: TcpStream) -> io::Result<()> {
             // unimplemented yet
         }
     }
+
+    let connect_duration = SystemTime::now()
+        .duration_since(connection.start_time)
+        .unwrap();
+    info!(
+        "Connection terminated; client {} was connected for {:?}.",
+        connection.connection_id, connect_duration
+    );
 
     Ok(())
 }

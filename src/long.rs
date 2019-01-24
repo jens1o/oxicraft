@@ -8,7 +8,7 @@ pub trait ReadLong<E> {
 }
 
 pub trait WriteLong {
-    fn write_long(&self) -> Vec<u8>;
+    fn write_long(&self) -> VecDeque<u8>;
 }
 
 impl ReadLong<io::Error> for VecDeque<u8> {
@@ -28,20 +28,17 @@ impl ReadLong<io::Error> for VecDeque<u8> {
 }
 
 impl WriteLong for i64 {
-    fn write_long(&self) -> Vec<u8> {
-        let mut result = Vec::with_capacity(8);
+    fn write_long(&self) -> VecDeque<u8> {
+        let mut result = VecDeque::with_capacity(8);
 
         let mut value = *self;
 
         for _ in 1..=8 {
-            let mut temp = value & 0b11111111;
+            let temp = value & 0b11111111;
 
-            value = value >> 7;
-            if value != 0 {
-                temp |= 0b10000000;
-            }
+            value = value >> 8;
 
-            result.push(temp as u8);
+            result.push_front(temp as u8);
         }
 
         result
@@ -74,7 +71,7 @@ mod tests {
         ];
 
         for mapping in mappings {
-            assert_eq!(mapping.1, mapping.0.write_long());
+            assert_eq!(VecDeque::from(mapping.1), mapping.0.write_long());
         }
     }
 }
