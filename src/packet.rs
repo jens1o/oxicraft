@@ -26,7 +26,7 @@ impl Packet {
 
         let length = packet_id_varint.len() + self.data.len();
 
-        let length_varint = length.encode();
+        let length_varint: VecDeque<u8> = Varint(length as i32).encode();
 
         // acquiring more capacity, because we also need to have enough space for our varint
         let mut write_buffer: Vec<u8> = Vec::with_capacity(length + length_varint.len());
