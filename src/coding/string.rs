@@ -53,6 +53,10 @@ impl Encodeable for String {
 
         result
     }
+
+    fn byte_length(&self) -> u8 {
+        self.len() as u8 + 7 // we need to prefix the length with a varint, which is encoded in seven bytes
+    }
 }
 
 impl Encodeable for str {
@@ -66,6 +70,10 @@ impl Encodeable for str {
         self.chars().for_each(|x| result.push_back(x as u8));
 
         result
+    }
+
+    fn byte_length(&self) -> u8 {
+        self.len() as u8 + 7 // we need to prefix the length with a varint, which is encoded in seven bytes
     }
 }
 

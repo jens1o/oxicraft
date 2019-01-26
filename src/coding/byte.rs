@@ -23,6 +23,10 @@ impl Encodeable for MinecraftByte {
     fn encode(&self) -> VecDeque<u8> {
         return VecDeque::from(vec![*self]);
     }
+
+    fn byte_length(&self) -> u8 {
+        1
+    }
 }
 
 #[cfg(test)]

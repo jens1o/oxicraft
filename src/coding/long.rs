@@ -47,6 +47,10 @@ impl Encodeable for Long {
 
         result
     }
+
+    fn byte_length(&self) -> u8 {
+        8
+    }
 }
 
 #[cfg(test)]

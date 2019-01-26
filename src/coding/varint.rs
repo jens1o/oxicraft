@@ -99,6 +99,10 @@ impl Encodeable for Varint {
 
         result
     }
+
+    fn byte_length(&self) -> u8 {
+        7
+    }
 }
 
 impl Encodeable for usize {
@@ -122,6 +126,10 @@ impl Encodeable for usize {
         }
 
         result
+    }
+
+    fn byte_length(&self) -> u8 {
+        7
     }
 }
 

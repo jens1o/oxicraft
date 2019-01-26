@@ -20,4 +20,8 @@ impl Encodeable for Int {
 
         result
     }
+
+    fn byte_length(&self) -> u8 {
+        4
+    }
 }
