@@ -7,44 +7,44 @@ pub type Long = i64;
 
 impl Decodeable<Long, io::Error> for VecDeque<u8> {
     fn decode(&mut self) -> Result<Long, io::Error> {
-        let mut result: Long = 0;
+        let mut temp: u64 = 0;
 
-        for _ in 1..=8 {
-            result += i64::from(
-                self.pop_front()
-                    .expect("Vector needs to have 8 bytes to decode a long(i64)."),
-            );
-            result <<= 8;
+        for i in 1..=8 {
+            let byte = self.pop_front().expect("Vector needs to have 8 bytes to decode a long(i64).") as u64;
+            temp += byte;
+            if i != 8 {
+                temp = temp << 8;
+            }
+            
         }
-
+        let msb = temp >> 63;
+        
+        let mut result: Long = temp as Long;
+        if msb == 0b1 {
+            result = -(!temp as Long);
+        }
+        
         Ok(result)
     }
 }
 
 impl Encodeable for Long {
     fn encode(&self) -> VecDeque<u8> {
-        // prepare some storage for our decoded bytes
         let mut result: VecDeque<u8> = VecDeque::with_capacity(8);
+        //max long value: +/- 9223372036854775808
+        let mut value = (i64::abs(*self)) as u64;
 
-        let mut value = *self;
-
-        for _ in 1..=8 {
-            // save encoded value in a temporial variable to avoid lossing
-            // information
-            let temp = value & 0b1111_1111;
-
-            value >>= 8;
-
-            result.push_front(temp as u8);
+        if i64::is_negative(*self) {
+            value = !value | (0b1 << 63)
         }
 
-        // HACK: Somehow, the last byte is decoded as 0x00 (0),
-        // for example
-        // [0, 0, 0, 0, 30, 100, 207, 0] instead of
-        // [0, 0, 0, 0, 0, 30, 100, 207]
-        // we need to fix this as soon as we have high values.
-        let last_value = result.pop_back().unwrap();
-        result.push_front(last_value);
+        for i in 1..=8 {
+            let byte = (value & 0b11111111) as u8;
+            if i != 8 {
+                value = value >> 8;
+            }
+            result.push_front(byte);
+        }
 
         result
     }
@@ -63,9 +63,13 @@ mod tests {
     #[test]
     fn test_read_long_on_vec() {
         let mappings: Vec<(Long, Vec<u8>)> = vec![
-            (632469504, vec![0, 0, 0, 0, 0, 37, 178, 184]),
-            (631943936, vec![0, 0, 0, 0, 0, 37, 170, 179]),
-            (630137600, vec![0, 0, 0, 0, 0, 37, 143, 35]),
+            (0, vec![0, 0, 0, 0, 0, 0, 0, 0]),
+            (1, vec![0, 0, 0, 0, 0, 0, 0, 1]),
+            (-1, vec![255, 255, 255, 255, 255, 255, 255, 254]),
+            (255, vec![0, 0, 0, 0, 0, 0, 0, 255]),
+            (-255, vec![255, 255, 255, 255, 255, 255, 255, 0]),
+            (0x7FFFFFFFFFFFFFFF, vec![127, 255, 255, 255, 255, 255, 255, 255]),
+            (-0x7FFFFFFFFFFFFFFF, vec![128, 0, 0, 0, 0, 0, 0, 0]),
         ];
 
         for mapping in mappings {
@@ -77,9 +81,13 @@ mod tests {
     #[test]
     fn test_write_long_to_vec() {
         let mappings: Vec<(Long, Vec<u8>)> = vec![
-            (632469504, vec![0, 0, 0, 0, 0, 37, 178, 184]),
-            (631943936, vec![0, 0, 0, 0, 0, 37, 170, 179]),
-            (630137600, vec![0, 0, 0, 0, 0, 37, 143, 35]),
+            (0, vec![0, 0, 0, 0, 0, 0, 0, 0]),
+            (1, vec![0, 0, 0, 0, 0, 0, 0, 1]),
+            (-1, vec![255, 255, 255, 255, 255, 255, 255, 254]),
+            (255, vec![0, 0, 0, 0, 0, 0, 0, 255]),
+            (-255, vec![255, 255, 255, 255, 255, 255, 255, 0]),
+            (0x7FFFFFFFFFFFFFFF, vec![127, 255, 255, 255, 255, 255, 255, 255]),
+            (-0x7FFFFFFFFFFFFFFF, vec![128, 0, 0, 0, 0, 0, 0, 0]),
         ];
 
         for mapping in mappings {
