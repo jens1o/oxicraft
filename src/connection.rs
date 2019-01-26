@@ -2,7 +2,7 @@ pub mod handshake;
 
 use crate::coding::long::Long;
 use crate::coding::short::UnsignedShort;
-use crate::coding::string::{ReadString, WriteString};
+use crate::coding::string::ReadString;
 use crate::coding::varint::Varint;
 use crate::coding::{Decodeable, Encodeable};
 use crate::entity::get_new_eid;
@@ -182,10 +182,10 @@ impl Connection {
 
         let response = serde_json::to_string(&handshake::mock_slp())?.to_owned();
 
-        let response_bytes = response.write_string();
+        let response_bytes = response.encode();
 
         let response_packet: Packet =
-            Packet::from_id_and_data(Varint(0x00), PacketData::Data(response_bytes.into()));
+            Packet::from_id_and_data(Varint(0x00), PacketData::Data(response_bytes));
 
         response_packet.send(&mut self.tcp_stream)?;
 
@@ -233,8 +233,8 @@ impl Connection {
                 &username, self.connection_id
             );
 
-            let username_written = username.write_string();
-            let player_uuid_written = player_uuid.write_string();
+            let username_written = username.encode();
+            let player_uuid_written = player_uuid.encode();
 
             self.username = Some(username);
 

@@ -12,10 +12,6 @@ pub trait ReadString<E> {
     fn read_string(&mut self, max_size: u16) -> Result<MinecraftString, E>;
 }
 
-pub trait WriteString {
-    fn write_string(&self) -> Vec<u8>;
-}
-
 impl ReadString<io::Error> for VecDeque<u8> {
     fn read_string(&mut self, max_size: u16) -> Result<MinecraftString, io::Error> {
         let length: Varint = self.decode()?;
@@ -45,29 +41,29 @@ impl ReadString<io::Error> for VecDeque<u8> {
     }
 }
 
-impl WriteString for String {
-    fn write_string(&self) -> Vec<u8> {
+impl Encodeable for String {
+    fn encode(&self) -> VecDeque<u8> {
         let length_varint = Varint(self.len() as i32).encode();
 
-        let mut result = Vec::with_capacity(self.len() + length_varint.len());
+        let mut result = VecDeque::with_capacity(self.len() + length_varint.len());
 
         result.extend(length_varint);
 
-        self.chars().for_each(|x| result.push(x as u8));
+        self.chars().for_each(|x| result.push_back(x as u8));
 
         result
     }
 }
 
-impl WriteString for str {
-    fn write_string(&self) -> Vec<u8> {
+impl Encodeable for str {
+    fn encode(&self) -> VecDeque<u8> {
         let length_varint = Varint(self.len() as i32).encode();
 
-        let mut result = Vec::with_capacity(self.len() + length_varint.len());
+        let mut result = VecDeque::with_capacity(self.len() + length_varint.len());
 
         result.extend(length_varint);
 
-        self.chars().for_each(|x| result.push(x as u8));
+        self.chars().for_each(|x| result.push_back(x as u8));
 
         result
     }
@@ -75,7 +71,7 @@ impl WriteString for str {
 
 #[cfg(test)]
 mod tests {
-    use super::{ReadString, WriteString};
+    use super::{Encodeable, ReadString};
     use std::collections::VecDeque;
 
     #[test]
@@ -87,13 +83,13 @@ mod tests {
     #[test]
     fn write_str() {
         let expected = vec![9, 108, 111, 99, 97, 108, 104, 111, 115, 116];
-        assert_eq!(expected, "localhost".write_string());
+        assert_eq!(VecDeque::from(expected), "localhost".encode());
     }
 
     #[test]
     fn write_string() {
         let expected = vec![9, 108, 111, 99, 97, 108, 104, 111, 115, 116];
-        assert_eq!(expected, "localhost".to_owned().write_string());
+        assert_eq!(VecDeque::from(expected), "localhost".to_owned().encode());
     }
 
     #[test]

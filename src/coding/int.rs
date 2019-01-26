@@ -15,7 +15,7 @@ impl Encodeable for Int {
 
             value = value >> 4;
 
-            result.push_front(temp as u8);
+            result.push_back(temp as u8);
         }
 
         result
