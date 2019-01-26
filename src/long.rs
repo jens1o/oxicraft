@@ -52,8 +52,6 @@ impl WriteLong for i64 {
         let last_value = result.pop_back().unwrap();
         result.push_front(last_value);
 
-        println!("Result: Written value of {} is {:?}", *self, result);
-
         result
     }
 }
