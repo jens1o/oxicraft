@@ -248,6 +248,7 @@ impl Connection {
                 Packet::from_id_and_data(Varint(0x02), PacketData::Data(login_success.into()));
 
             login_success_packet.send(&mut self.tcp_stream)?;
+            info!("Sent login success package.");
 
             self.state = ConnectionState::Play;
 
@@ -262,6 +263,20 @@ impl Connection {
             let max_players: u8 = 20;
             let level_type: String = String::from("flat");
             let reduced_debug_info: bool = false;
+
+            let mut package_data: VecDeque<u8> = VecDeque::new();
+
+            package_data.extend(entity_id.encode());
+            package_data.extend(gamemode.encode());
+            package_data.extend(dimension.encode());
+            package_data.extend(difficulty.encode());
+            package_data.extend(max_players.encode());
+            package_data.extend(level_type.encode());
+            package_data.extend(reduced_debug_info.encode());
+
+            let packet = Packet::from_id_and_data(Varint(0x25), PacketData::Data(package_data));
+
+            packet.send(&mut self.tcp_stream)?;
         }
 
         Ok(())

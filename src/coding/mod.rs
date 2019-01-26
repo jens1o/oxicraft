@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 
+pub mod boolean;
+pub mod byte;
 pub mod int;
 pub mod long;
 pub mod short;
