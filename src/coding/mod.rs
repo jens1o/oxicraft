@@ -2,7 +2,11 @@ use std::collections::VecDeque;
 
 pub mod boolean;
 pub mod byte;
+pub mod difficulty;
+pub mod dimension;
+pub mod gamemode;
 pub mod int;
+pub mod level_type;
 pub mod long;
 pub mod short;
 pub mod string;

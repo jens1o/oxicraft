@@ -9,6 +9,7 @@ mod coding;
 mod connection;
 mod entity;
 mod packet;
+mod world;
 
 use crate::connection::{handshake::HandshakeNextState, Connection};
 use log::LevelFilter;

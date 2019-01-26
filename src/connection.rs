@@ -6,6 +6,7 @@ use crate::coding::varint::Varint;
 use crate::coding::{Decodeable, Encodeable};
 use crate::entity::get_new_eid;
 use crate::packet::{Packet, PacketData};
+use crate::world::World;
 use std::collections::VecDeque;
 use std::fmt;
 use std::io::{self, Read};
@@ -243,22 +244,19 @@ impl Connection {
             // TODO: refactor
 
             let entity_id: i32 = get_new_eid() as i32;
-            let gamemode: u8 = 1; // Creative
-            let dimension: i32 = 0; // Overworld
-            let difficulty: u8 = 0; // Peaceful
+            let world = World::default();
             let max_players: u8 = 20;
-            let level_type: String = String::from("flat");
             let reduced_debug_info: bool = false;
 
             let mut packet = Packet::from_id_and_data(
                 Varint(0x25),
                 PacketData::Data(super::build_package_data!(
                     entity_id,
-                    gamemode,
-                    dimension,
-                    difficulty,
+                    world.gamemode,
+                    world.dimension,
+                    world.difficulty,
                     max_players,
-                    level_type,
+                    world.level_type,
                     reduced_debug_info
                 )),
             );
