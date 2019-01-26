@@ -21,10 +21,11 @@ impl Packet {
         }
     }
 
-    pub fn send(&self, connection: &mut TcpStream) -> io::Result<()> {
+    pub fn send(&mut self, connection: &mut TcpStream) -> io::Result<()> {
         let packet_id_varint = self.packet_id.encode();
 
         let length = packet_id_varint.len() + self.data.len();
+        self.length = length;
 
         let length_varint: VecDeque<u8> = Varint(length as i32).encode();
 
@@ -39,6 +40,8 @@ impl Packet {
         write_buffer.extend(self.data.to_bytes());
 
         connection.write_all(&write_buffer)?;
+
+        debug!("Sent data {:?}", self);
 
         connection.flush()
     }

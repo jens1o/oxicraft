@@ -181,7 +181,7 @@ impl Connection {
 
         let response = serde_json::to_string(&handshake::mock_slp())?.to_owned();
 
-        let response_packet: Packet =
+        let mut response_packet: Packet =
             Packet::from_id_and_data(Varint(0x00), PacketData::Data(response.encode()));
 
         response_packet.send(&mut self.tcp_stream)?;
@@ -194,7 +194,8 @@ impl Connection {
 
         // now, the client sends a data packet (basically to ping us), with a long we need to pong back.
         if let PacketData::Data(packet_data) = self.read_data_packet()?.data {
-            let pong_packet = Packet::from_id_and_data(Varint(0x01), PacketData::Data(packet_data));
+            let mut pong_packet =
+                Packet::from_id_and_data(Varint(0x01), PacketData::Data(packet_data));
 
             pong_packet.send(&mut self.tcp_stream)?;
         } else {
@@ -225,7 +226,7 @@ impl Connection {
                 &username, self.connection_id
             );
 
-            let login_success_packet = Packet::from_id_and_data(
+            let mut login_success_packet = Packet::from_id_and_data(
                 Varint(0x02),
                 PacketData::Data(super::build_package_data!(player_uuid, username)),
             );
@@ -241,7 +242,7 @@ impl Connection {
 
             // TODO: refactor
 
-            let entity_id = get_new_eid();
+            let entity_id: i32 = get_new_eid() as i32;
             let gamemode: u8 = 1; // Creative
             let dimension: i32 = 0; // Overworld
             let difficulty: u8 = 0; // Peaceful
@@ -249,7 +250,7 @@ impl Connection {
             let level_type: String = String::from("flat");
             let reduced_debug_info: bool = false;
 
-            let packet = Packet::from_id_and_data(
+            let mut packet = Packet::from_id_and_data(
                 Varint(0x25),
                 PacketData::Data(super::build_package_data!(
                     entity_id,
