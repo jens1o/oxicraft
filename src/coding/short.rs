@@ -1,27 +1,12 @@
+use super::Decodeable;
 use std::collections::VecDeque;
 use std::io;
 
 pub type Short = i16;
 pub type UnsignedShort = u16;
 
-pub trait ReadShort<E> {
-    fn read_short(&mut self) -> Result<Short, E>;
-}
-
-pub trait ReadUnsignedShort<E> {
-    fn read_unsigned_short(&mut self) -> Result<UnsignedShort, E>;
-}
-
-pub trait ToShort {
-    fn to_short(&self) -> Vec<Short>;
-}
-
-pub trait ToUnsignedShort {
-    fn to_unsigned_short(&self) -> Vec<UnsignedShort>;
-}
-
-impl ReadUnsignedShort<io::Error> for VecDeque<u8> {
-    fn read_unsigned_short(&mut self) -> Result<UnsignedShort, io::Error> {
+impl Decodeable<UnsignedShort, io::Error> for VecDeque<u8> {
+    fn decode(&mut self) -> Result<UnsignedShort, io::Error> {
         let error_message =
             "VecDeque needs to have at least 2 bytes for reading an unsigned-short.";
 
@@ -35,8 +20,7 @@ impl ReadUnsignedShort<io::Error> for VecDeque<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::UnsignedShort;
-    use crate::short::ReadUnsignedShort;
+    use super::{Decodeable, UnsignedShort};
     use std::collections::VecDeque;
 
     #[test]
@@ -48,10 +32,9 @@ mod tests {
         ];
 
         for mapping in mappings {
-            assert_eq!(
-                mapping.0,
-                VecDeque::from(mapping.1).read_unsigned_short().unwrap()
-            );
+            let actual: UnsignedShort = VecDeque::from(mapping.1).decode().unwrap();
+
+            assert_eq!(mapping.0, actual);
         }
     }
 }

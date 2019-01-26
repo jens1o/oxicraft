@@ -1,18 +1,11 @@
+use super::{Decodeable, Encodeable};
 use std::collections::VecDeque;
 use std::io;
 
 pub type Long = i64;
 
-pub trait ReadLong<E> {
-    fn read_long(&mut self) -> Result<Long, E>;
-}
-
-pub trait WriteLong {
-    fn write_long(&self) -> VecDeque<u8>;
-}
-
-impl ReadLong<io::Error> for VecDeque<u8> {
-    fn read_long(&mut self) -> Result<Long, io::Error> {
+impl Decodeable<Long, io::Error> for VecDeque<u8> {
+    fn decode(&mut self) -> Result<Long, io::Error> {
         let mut result: Long = 0;
 
         for _ in 1..=8 {
@@ -27,8 +20,8 @@ impl ReadLong<io::Error> for VecDeque<u8> {
     }
 }
 
-impl WriteLong for i64 {
-    fn write_long(&self) -> VecDeque<u8> {
+impl Encodeable for Long {
+    fn encode(&self) -> VecDeque<u8> {
         // prepare some storage for our decoded bytes
         let mut result: VecDeque<u8> = VecDeque::with_capacity(8);
 
@@ -58,7 +51,8 @@ impl WriteLong for i64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{Long, ReadLong, WriteLong};
+    use super::Long;
+    use super::{Decodeable, Encodeable};
     use std::collections::VecDeque;
 
     #[test]
@@ -70,7 +64,9 @@ mod tests {
         ];
 
         for mapping in mappings {
-            assert_eq!(mapping.0, VecDeque::from(mapping.1).read_long().unwrap());
+            let actual: Long = VecDeque::from(mapping.1).decode().unwrap();
+
+            assert_eq!(mapping.0, actual);
         }
     }
     #[test]
@@ -82,7 +78,7 @@ mod tests {
         ];
 
         for mapping in mappings {
-            assert_eq!(VecDeque::from(mapping.1), mapping.0.write_long());
+            assert_eq!(VecDeque::from(mapping.1), mapping.0.encode());
         }
     }
 }

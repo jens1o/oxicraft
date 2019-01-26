@@ -1,10 +1,12 @@
 pub mod handshake;
 
-use crate::long::{ReadLong, WriteLong};
+use crate::coding::long::Long;
+use crate::coding::short::UnsignedShort;
+use crate::coding::string::{ReadString, WriteString};
+use crate::coding::varint::Varint;
+use crate::coding::{Decodeable, Encodeable};
+use crate::entity::get_new_eid;
 use crate::packet::{Packet, PacketData};
-use crate::short::ReadUnsignedShort;
-use crate::string::{ReadString, WriteString};
-use crate::varint::{ReadVarint, WriteVarint};
 use std::collections::VecDeque;
 use std::fmt;
 use std::io::{self, Read};
@@ -37,6 +39,7 @@ impl fmt::Display for ConnectionId {
 pub enum ConnectionState {
     Unknown,
     Handshaking,
+    Play,
 }
 
 impl Default for ConnectionState {
@@ -55,6 +58,7 @@ pub struct Connection {
     pub protocol_version: Option<u16>,
     /// the server address used to connect to this specified by the client
     pub server_address: Option<SocketAddr>,
+    pub username: Option<String>,
 }
 
 impl Connection {
@@ -67,6 +71,7 @@ impl Connection {
             state: Default::default(),
             protocol_version: Default::default(),
             server_address: Default::default(),
+            username: Default::default(),
         })
     }
 
@@ -91,14 +96,14 @@ impl Connection {
 
         if let PacketData::Data(mut packet_data) = data_packet.data {
             // read protocol version
-            let protocol_version = packet_data.read_varint()?;
+            let protocol_version: Varint = packet_data.decode()?;
 
-            if protocol_version > i32::from(u16::max_value()) {
+            if protocol_version.0 > i32::from(u16::max_value()) {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "Too great protocol version supplied.",
                 ));
-            } else if protocol_version < i32::from(u16::min_value()) {
+            } else if protocol_version.0 < i32::from(u16::min_value()) {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "Too tiny protocol version supplied.",
@@ -107,7 +112,7 @@ impl Connection {
 
             trace!("Protocol version: {:?}", protocol_version);
 
-            self.protocol_version = Some(protocol_version as u16);
+            self.protocol_version = Some(protocol_version.0 as u16);
 
             let mut server_address = packet_data.read_string(255)?;
 
@@ -126,20 +131,20 @@ impl Connection {
             }
 
             let ip_addr = ip_addr.unwrap();
-            let port = packet_data.read_unsigned_short()?;
+            let port: UnsignedShort = packet_data.decode()?;
             let socket_addr = SocketAddr::new(ip_addr, port);
 
             self.server_address = Some(socket_addr);
 
             trace!("Client used {} to connect.", &socket_addr);
 
-            let next_state = match packet_data.read_varint()? {
-                1 => handshake::HandshakeNextState::Status,
-                2 => handshake::HandshakeNextState::Login,
+            let next_state = match packet_data.decode()? {
+                Varint(1) => handshake::HandshakeNextState::Status,
+                Varint(2) => handshake::HandshakeNextState::Login,
                 x => {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidInput,
-                        format!("The next state may only be 1 or 2, {} given.", x),
+                        format!("The next state may only be 1 or 2, {} given.", x.0),
                     ));
                 }
             };
@@ -180,7 +185,7 @@ impl Connection {
         let response_bytes = response.write_string();
 
         let response_packet: Packet =
-            Packet::from_id_and_data(0x00, PacketData::Data(response_bytes.into()));
+            Packet::from_id_and_data(Varint(0x00), PacketData::Data(response_bytes.into()));
 
         response_packet.send(&mut self.tcp_stream)?;
 
@@ -192,12 +197,12 @@ impl Connection {
 
         // now, the client sends a data packet (basically to ping us), with a long we need to pong back.
         if let PacketData::Data(mut packet_data) = self.read_data_packet()?.data {
-            let payload = packet_data.read_long()?;
+            let payload: Long = packet_data.decode()?;
             trace!("Payload of ping is {}.", payload);
 
-            let pong = payload.write_long();
+            let pong = payload.encode();
 
-            let pong_packet = Packet::from_id_and_data(0x01, PacketData::Data(pong));
+            let pong_packet = Packet::from_id_and_data(Varint(0x01), PacketData::Data(pong));
 
             pong_packet.send(&mut self.tcp_stream)?;
         } else {
@@ -207,22 +212,77 @@ impl Connection {
         Ok(())
     }
 
+    /// Performs the necessary step to let the user spawn on a flat-map with grass all over the place.
+    pub fn login(&mut self) -> io::Result<()> {
+        // C->S Login Start
+        let login_packet = self.read_data_packet()?;
+
+        assert!(login_packet.packet_id == 0x00);
+        if let PacketData::Data(mut packet_data) = login_packet.data {
+            let username = packet_data.read_string(16)?;
+
+            info!("New login from {} ({})!", &username, self.connection_id);
+
+            // UUID-4 (with hyphens) of jens1o
+            let player_uuid = "8e383e9f-608e-4556-97c9-61312c741ea0".to_owned();
+
+            // S->C Login Success Packet
+
+            info!(
+                "Sending login success packet to {} ({}).",
+                &username, self.connection_id
+            );
+
+            let username_written = username.write_string();
+            let player_uuid_written = player_uuid.write_string();
+
+            self.username = Some(username);
+
+            let mut login_success: Vec<u8> =
+                Vec::with_capacity(username_written.len() + player_uuid_written.len());
+
+            login_success.extend(player_uuid_written);
+            login_success.extend(username_written);
+
+            let login_success_packet =
+                Packet::from_id_and_data(Varint(0x02), PacketData::Data(login_success.into()));
+
+            login_success_packet.send(&mut self.tcp_stream)?;
+
+            self.state = ConnectionState::Play;
+
+            // S->C Join Game
+
+            // TODO: refactor
+
+            let entity_id = get_new_eid();
+            let gamemode: u8 = 1; // Creative
+            let dimension: i32 = 0; // Overworld
+            let difficulty: u8 = 0; // Peaceful
+            let max_players: u8 = 20;
+            let level_type: String = String::from("flat");
+            let reduced_debug_info: bool = false;
+        }
+
+        Ok(())
+    }
+
     pub fn read_data_packet(&mut self) -> io::Result<Packet> {
-        let length = self.tcp_stream.read_varint()?;
-        ensure_data_size(length)?;
+        let length: Varint = self.tcp_stream.decode()?;
+        ensure_data_size(length.0)?;
 
         // we now can ensure it is a positive number, thus cast it
-        let length: usize = length as usize;
+        let length: usize = length.0 as usize;
 
-        let packet_id = self.tcp_stream.read_varint()?;
+        let packet_id: Varint = self.tcp_stream.decode()?;
 
         // read the package contents. We need to read the amount that was given, without the package id.
-        let data_length = length - packet_id.write_varint().len();
+        let data_length = length - packet_id.encode().len();
 
         trace!(
             "Reading {} bytes to read content of package with id {:#X}.",
             data_length,
-            packet_id
+            packet_id.0
         );
 
         let mut buffer = vec![0; data_length];

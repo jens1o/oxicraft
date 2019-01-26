@@ -1,5 +1,6 @@
+use super::varint::Varint;
+use super::{Decodeable, Encodeable};
 use crate::connection::ensure_data_size;
-use crate::varint::{ReadVarint, WriteVarint};
 use std::char;
 use std::collections::VecDeque;
 use std::io;
@@ -17,7 +18,8 @@ pub trait WriteString {
 
 impl ReadString<io::Error> for VecDeque<u8> {
     fn read_string(&mut self, max_size: u16) -> Result<MinecraftString, io::Error> {
-        let mut length = self.read_varint()?;
+        let length: Varint = self.decode()?;
+        let mut length = length.0;
         ensure_data_size(length)?;
 
         if length > i32::from(max_size) {
@@ -45,7 +47,7 @@ impl ReadString<io::Error> for VecDeque<u8> {
 
 impl WriteString for String {
     fn write_string(&self) -> Vec<u8> {
-        let length_varint = (self.len() as i32).write_varint();
+        let length_varint = Varint(self.len() as i32).encode();
 
         let mut result = Vec::with_capacity(self.len() + length_varint.len());
 
@@ -59,7 +61,7 @@ impl WriteString for String {
 
 impl WriteString for str {
     fn write_string(&self) -> Vec<u8> {
-        let length_varint = (self.len() as i32).write_varint();
+        let length_varint = Varint(self.len() as i32).encode();
 
         let mut result = Vec::with_capacity(self.len() + length_varint.len());
 
@@ -83,9 +85,15 @@ mod tests {
     }
 
     #[test]
-    fn write_string() {
+    fn write_str() {
         let expected = vec![9, 108, 111, 99, 97, 108, 104, 111, 115, 116];
         assert_eq!(expected, "localhost".write_string());
+    }
+
+    #[test]
+    fn write_string() {
+        let expected = vec![9, 108, 111, 99, 97, 108, 104, 111, 115, 116];
+        assert_eq!(expected, "localhost".to_owned().write_string());
     }
 
     #[test]

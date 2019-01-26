@@ -1,5 +1,5 @@
-use crate::short::UnsignedShort;
-use crate::string::MinecraftString;
+use crate::coding::short::UnsignedShort;
+use crate::coding::string::MinecraftString;
 
 #[derive(Debug)]
 pub enum HandshakeNextState {

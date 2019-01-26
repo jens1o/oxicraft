@@ -1,23 +1,28 @@
+use super::{Decodeable, Encodeable};
 use std::collections::VecDeque;
 use std::io::{self, Read};
 use std::net::TcpStream;
 use std::{i32, u8};
 
-pub type Varint = i32;
+#[derive(Debug)]
+pub struct Varint(pub i32);
 
-pub trait ReadVarint<E> {
-    fn read_varint(&mut self) -> Result<Varint, E>;
+impl PartialEq<Varint> for i32 {
+    fn eq(&self, other: &Varint) -> bool {
+        *self == other.0
+    }
+}
+impl PartialEq<i32> for Varint {
+    fn eq(&self, other: &i32) -> bool {
+        (*self).0 == *other
+    }
 }
 
-pub trait WriteVarint {
-    fn write_varint(&self) -> Vec<u8>;
-}
-
-impl ReadVarint<io::Error> for TcpStream {
-    fn read_varint(&mut self) -> Result<Varint, io::Error> {
+impl Decodeable<Varint, io::Error> for TcpStream {
+    fn decode(&mut self) -> Result<Varint, io::Error> {
         // see https://wiki.vg/Protocol#VarInt_and_VarLong
         let mut num_of_reads: u8 = 0;
-        let mut result: Varint = 0;
+        let mut result: i32 = 0;
 
         loop {
             let mut buffer = [0; 1];
@@ -40,15 +45,15 @@ impl ReadVarint<io::Error> for TcpStream {
             }
         }
 
-        Ok(result)
+        Ok(Varint(result))
     }
 }
 
-impl ReadVarint<io::Error> for VecDeque<u8> {
-    fn read_varint(&mut self) -> Result<Varint, io::Error> {
+impl Decodeable<Varint, io::Error> for VecDeque<u8> {
+    fn decode(&mut self) -> Result<Varint, io::Error> {
         // see https://wiki.vg/Protocol#VarInt_and_VarLong
         let mut num_of_reads: u8 = 0;
-        let mut result: Varint = 0;
+        let mut result: i32 = 0;
 
         loop {
             let byte = self.pop_front().unwrap();
@@ -68,15 +73,15 @@ impl ReadVarint<io::Error> for VecDeque<u8> {
             }
         }
 
-        Ok(result)
+        Ok(Varint(result))
     }
 }
 
-impl WriteVarint for i32 {
-    fn write_varint(&self) -> Vec<u8> {
-        let mut result = Vec::with_capacity(7);
+impl Encodeable for Varint {
+    fn encode(&self) -> VecDeque<u8> {
+        let mut result = VecDeque::with_capacity(7);
 
-        let mut value = *self as u32;
+        let mut value = (*self).0 as u32;
 
         loop {
             let mut temp = value & 0b01111111;
@@ -85,7 +90,7 @@ impl WriteVarint for i32 {
                 temp |= 0b10000000;
             }
 
-            result.push(temp as u8);
+            result.push_back(temp as u8);
 
             if value == 0 {
                 break;
@@ -96,13 +101,11 @@ impl WriteVarint for i32 {
     }
 }
 
-impl WriteVarint for usize {
-    fn write_varint(&self) -> Vec<u8> {
-        let mut result = Vec::with_capacity(7);
+impl Encodeable for usize {
+    fn encode(&self) -> VecDeque<u8> {
+        let mut result = VecDeque::with_capacity(7);
 
         let mut value = *self;
-
-        let mut num_iterations = 0;
 
         loop {
             let mut temp = value & 0b01111111;
@@ -111,12 +114,7 @@ impl WriteVarint for usize {
                 temp |= 0b10000000;
             }
 
-            result.push(temp as u8);
-
-            num_iterations += 1;
-            if num_iterations > 7 {
-                panic!("Too many iterations!");
-            }
+            result.push_front(temp as u8);
 
             if value == 0 {
                 break;
@@ -129,13 +127,13 @@ impl WriteVarint for usize {
 
 #[cfg(test)]
 mod tests {
-    use super::Varint;
-    use crate::varint::{ReadVarint, WriteVarint};
+    use super::{Decodeable, Encodeable, Varint};
     use std::collections::VecDeque;
+    use std::i32;
 
     #[test]
     fn test_read_varint_from_vec() {
-        let mappings: Vec<(Varint, Vec<u8>)> = vec![
+        let mappings: Vec<(i32, Vec<u8>)> = vec![
             (0, vec![0x00]),
             (1, vec![0x01]),
             (127, vec![0x7f]),
@@ -147,25 +145,26 @@ mod tests {
         ];
 
         for mapping in mappings {
-            assert_eq!(mapping.0, VecDeque::from(mapping.1).read_varint().unwrap());
+            let expected: Varint = VecDeque::from(mapping.1).decode().unwrap();
+            assert_eq!(mapping.0, expected);
         }
     }
 
     #[test]
     fn test_write_vec_from_varint_negative() {
-        let mappings: Vec<(Varint, Vec<u8>)> = vec![
+        let mappings: Vec<(i32, Vec<u8>)> = vec![
             (-1, vec![0xff, 0xff, 0xff, 0xff, 0x0f]),
             (-2147483648, vec![0x80, 0x80, 0x80, 0x80, 0x08]),
         ];
 
         for mapping in mappings {
-            assert_eq!(mapping.1, mapping.0.write_varint());
+            assert_eq!(VecDeque::from(mapping.1), Varint(mapping.0).encode());
         }
     }
 
     #[test]
     fn test_write_vec_from_varint_positive() {
-        let mappings: Vec<(Varint, Vec<u8>)> = vec![
+        let mappings: Vec<(i32, Vec<u8>)> = vec![
             (0, vec![0x00]),
             (1, vec![0x01]),
             (127, vec![0x7f]),
@@ -175,23 +174,14 @@ mod tests {
         ];
 
         for mapping in mappings {
-            assert_eq!(mapping.1, mapping.0.write_varint());
+            assert_eq!(VecDeque::from(mapping.1), Varint(mapping.0).encode());
         }
     }
 
     #[test]
-    fn test_write_vec_from_usize() {
-        let mappings: Vec<(usize, Vec<u8>)> = vec![
-            (0, vec![0x00]),
-            (1, vec![0x01]),
-            (127, vec![0x7f]),
-            (128, vec![0x80, 0x01]),
-            (255, vec![0xff, 0x01]),
-            (2147483647, vec![0xff, 0xff, 0xff, 0xff, 0x07]),
-        ];
-
-        for mapping in mappings {
-            assert_eq!(mapping.1, mapping.0.write_varint());
+    fn test_varint_and_i32_are_same() {
+        for i in (i32::min_value()..=i32::max_value()).take(1000) {
+            assert_eq!(i, Varint(i));
         }
     }
 }

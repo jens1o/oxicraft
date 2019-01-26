@@ -1,4 +1,5 @@
-use crate::varint::WriteVarint;
+use crate::coding::varint::Varint;
+use crate::coding::Encodeable;
 use std::collections::VecDeque;
 use std::fmt;
 use std::io::{self, Write};
@@ -7,12 +8,12 @@ use std::net::TcpStream;
 #[derive(Debug)]
 pub struct Packet {
     pub length: usize,
-    pub packet_id: i32,
+    pub packet_id: Varint,
     pub data: PacketData,
 }
 
 impl Packet {
-    pub fn from_id_and_data(packet_id: i32, data: PacketData) -> Packet {
+    pub fn from_id_and_data(packet_id: Varint, data: PacketData) -> Packet {
         Packet {
             length: 0,
             packet_id,
@@ -21,11 +22,11 @@ impl Packet {
     }
 
     pub fn send(&self, connection: &mut TcpStream) -> io::Result<()> {
-        let packet_id_varint = self.packet_id.write_varint();
+        let packet_id_varint = self.packet_id.encode();
 
         let length = packet_id_varint.len() + self.data.len();
 
-        let length_varint = length.write_varint();
+        let length_varint = length.encode();
 
         // acquiring more capacity, because we also need to have enough space for our varint
         let mut write_buffer: Vec<u8> = Vec::with_capacity(length + length_varint.len());
@@ -37,7 +38,9 @@ impl Packet {
 
         write_buffer.extend(self.data.to_bytes());
 
-        connection.write_all(&mut write_buffer)
+        connection.write_all(&mut write_buffer)?;
+
+        connection.flush()
     }
 }
 

@@ -5,12 +5,10 @@ extern crate simplelog;
 #[macro_use]
 extern crate serde_derive;
 
+mod coding;
 mod connection;
-mod long;
+mod entity;
 mod packet;
-mod short;
-mod string;
-mod varint;
 
 use crate::connection::{handshake::HandshakeNextState, Connection};
 use log::LevelFilter;
@@ -33,8 +31,8 @@ fn handle_connection(stream: TcpStream) -> io::Result<()> {
         HandshakeNextState::Status => {
             connection.send_status()?;
         }
-        _ => {
-            // unimplemented yet
+        HandshakeNextState::Login => {
+            connection.login()?;
         }
     }
 
