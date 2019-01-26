@@ -41,7 +41,7 @@ impl Encodeable for Long {
         for i in 1..=8 {
             let byte = (value & 0b11111111) as u8;
             if i != 8 {
-                value = value >> 8;
+                value >>= 8;
             }
             result.push_front(byte);
         }
