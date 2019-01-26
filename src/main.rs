@@ -4,11 +4,12 @@ extern crate serde_json;
 extern crate simplelog;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+mod packet;
 
 mod coding;
 mod connection;
 mod entity;
-mod packet;
 
 use crate::connection::{handshake::HandshakeNextState, Connection};
 use log::LevelFilter;
@@ -62,4 +63,27 @@ fn main() -> io::Result<()> {
     }
 
     Ok(())
+}
+
+#[macro_export]
+macro_rules! build_package_data {
+    ( $( $x: expr ),* ) => {
+        {
+            use crate::coding::Encodeable;
+
+            let mut package_data: VecDeque<u8> = VecDeque::with_capacity(
+                (
+                    $(
+                        $x.byte_length() +
+                    )*
+                0) as usize
+            );
+
+            $(
+                package_data.extend($x.encode());
+            )*
+
+            package_data
+        }
+    }
 }

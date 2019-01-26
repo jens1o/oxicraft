@@ -1,6 +1,5 @@
 pub mod handshake;
 
-use crate::coding::long::Long;
 use crate::coding::short::UnsignedShort;
 use crate::coding::string::ReadString;
 use crate::coding::varint::Varint;
@@ -182,10 +181,8 @@ impl Connection {
 
         let response = serde_json::to_string(&handshake::mock_slp())?.to_owned();
 
-        let response_bytes = response.encode();
-
         let response_packet: Packet =
-            Packet::from_id_and_data(Varint(0x00), PacketData::Data(response_bytes));
+            Packet::from_id_and_data(Varint(0x00), PacketData::Data(response.encode()));
 
         response_packet.send(&mut self.tcp_stream)?;
 
@@ -196,13 +193,8 @@ impl Connection {
         );
 
         // now, the client sends a data packet (basically to ping us), with a long we need to pong back.
-        if let PacketData::Data(mut packet_data) = self.read_data_packet()?.data {
-            let payload: Long = packet_data.decode()?;
-            trace!("Payload of ping is {}.", payload);
-
-            let pong = payload.encode();
-
-            let pong_packet = Packet::from_id_and_data(Varint(0x01), PacketData::Data(pong));
+        if let PacketData::Data(packet_data) = self.read_data_packet()?.data {
+            let pong_packet = Packet::from_id_and_data(Varint(0x01), PacketData::Data(packet_data));
 
             pong_packet.send(&mut self.tcp_stream)?;
         } else {
@@ -233,19 +225,12 @@ impl Connection {
                 &username, self.connection_id
             );
 
-            let username_written = username.encode();
-            let player_uuid_written = player_uuid.encode();
+            let login_success_packet = Packet::from_id_and_data(
+                Varint(0x02),
+                PacketData::Data(super::build_package_data!(player_uuid, username)),
+            );
 
             self.username = Some(username);
-
-            let mut login_success: Vec<u8> =
-                Vec::with_capacity(username_written.len() + player_uuid_written.len());
-
-            login_success.extend(player_uuid_written);
-            login_success.extend(username_written);
-
-            let login_success_packet =
-                Packet::from_id_and_data(Varint(0x02), PacketData::Data(login_success.into()));
 
             login_success_packet.send(&mut self.tcp_stream)?;
             info!("Sent login success package.");
@@ -264,17 +249,18 @@ impl Connection {
             let level_type: String = String::from("flat");
             let reduced_debug_info: bool = false;
 
-            let mut package_data: VecDeque<u8> = VecDeque::new();
-
-            package_data.extend(entity_id.encode());
-            package_data.extend(gamemode.encode());
-            package_data.extend(dimension.encode());
-            package_data.extend(difficulty.encode());
-            package_data.extend(max_players.encode());
-            package_data.extend(level_type.encode());
-            package_data.extend(reduced_debug_info.encode());
-
-            let packet = Packet::from_id_and_data(Varint(0x25), PacketData::Data(package_data));
+            let packet = Packet::from_id_and_data(
+                Varint(0x25),
+                PacketData::Data(super::build_package_data!(
+                    entity_id,
+                    gamemode,
+                    dimension,
+                    difficulty,
+                    max_players,
+                    level_type,
+                    reduced_debug_info
+                )),
+            );
 
             packet.send(&mut self.tcp_stream)?;
         }
