@@ -1,5 +1,6 @@
 pub mod handshake;
 
+use crate::long::{ReadLong, WriteLong};
 use crate::packet::{Packet, PacketData};
 use crate::short::ReadUnsignedShort;
 use crate::string::{ReadString, WriteString};
@@ -190,8 +191,13 @@ impl Connection {
         );
 
         // now, the client sends a data packet (basically to ping us), with a long we need to pong back.
-        if let PacketData::Data(packet_data) = self.read_data_packet()?.data {
-            let pong_packet = Packet::from_id_and_data(0x01, PacketData::Data(packet_data));
+        if let PacketData::Data(mut packet_data) = self.read_data_packet()?.data {
+            let payload = packet_data.read_long()?;
+            trace!("Payload of ping is {}.", payload);
+
+            let pong = payload.write_long();
+
+            let pong_packet = Packet::from_id_and_data(0x01, PacketData::Data(pong));
 
             pong_packet.send(&mut self.tcp_stream)?;
         } else {

@@ -29,17 +29,30 @@ impl ReadLong<io::Error> for VecDeque<u8> {
 
 impl WriteLong for i64 {
     fn write_long(&self) -> VecDeque<u8> {
-        let mut result = VecDeque::with_capacity(8);
+        // prepare some storage for our decoded bytes
+        let mut result: VecDeque<u8> = VecDeque::with_capacity(8);
 
         let mut value = *self;
 
         for _ in 1..=8 {
+            // save encoded value in a temporial variable to avoid lossing
+            // information
             let temp = value & 0b11111111;
 
             value = value >> 8;
 
             result.push_front(temp as u8);
         }
+
+        // HACK: Somehow, the last byte is decoded as 0x00 (0),
+        // for example
+        // [0, 0, 0, 0, 30, 100, 207, 0] instead of
+        // [0, 0, 0, 0, 0, 30, 100, 207]
+        // we need to fix this as soon as we have high values.
+        let last_value = result.pop_back().unwrap();
+        result.push_front(last_value);
+
+        println!("Result: Written value of {} is {:?}", *self, result);
 
         result
     }

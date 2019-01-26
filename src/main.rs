@@ -41,6 +41,7 @@ fn handle_connection(stream: TcpStream) -> io::Result<()> {
     let connect_duration = SystemTime::now()
         .duration_since(connection.start_time)
         .unwrap();
+
     info!(
         "Connection terminated; client {} was connected for {:?}.",
         connection.connection_id, connect_duration
