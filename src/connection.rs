@@ -241,8 +241,6 @@ impl Connection {
 
             // S->C Join Game
 
-            // TODO: refactor
-
             let entity_id: i32 = get_new_eid() as i32;
             let world = World::default();
             let max_players: u8 = 20;
@@ -262,6 +260,8 @@ impl Connection {
             );
 
             packet.send(&mut self.tcp_stream)?;
+
+            // TODO: S->C Player Abilities Packet
         }
 
         Ok(())
