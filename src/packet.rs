@@ -38,7 +38,7 @@ impl Packet {
 
         write_buffer.extend(self.data.to_bytes());
 
-        connection.write_all(&mut write_buffer)?;
+        connection.write_all(&write_buffer)?;
 
         connection.flush()
     }
@@ -73,7 +73,7 @@ impl PacketData {
     pub fn to_bytes(&self) -> Vec<u8> {
         if let PacketData::Data(packet_data) = self {
             // TODO: Optimize this.
-            return packet_data.iter().map(|x| *x).collect::<Vec<_>>();
+            return packet_data.iter().cloned().collect::<Vec<_>>();
         }
 
         unimplemented!();

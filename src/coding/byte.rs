@@ -21,7 +21,7 @@ impl Decodeable<MinecraftByte, io::Error> for VecDeque<u8> {
 
 impl Encodeable for MinecraftByte {
     fn encode(&self) -> VecDeque<u8> {
-        return VecDeque::from(vec![*self]);
+        VecDeque::from(vec![*self])
     }
 
     fn byte_length(&self) -> u8 {

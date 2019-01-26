@@ -150,7 +150,7 @@ impl Connection {
 
             info!("Next state of {}: {:?}", self.connection_id, next_state);
 
-            if packet_data.len() != 0 {
+            if !packet_data.is_empty() {
                 warn!("The handshake packet sent by the client contains more data than expected. Rest of data: {:?}", packet_data);
             }
 

@@ -33,7 +33,7 @@ pub struct ServerListPingResponse {
 }
 
 pub fn mock_slp() -> ServerListPingResponse {
-    let slp = ServerListPingResponse {
+    ServerListPingResponse {
         version: ServerListPingVersion {
             name: "1.13.1".to_owned(),
             protocol: 404,
@@ -46,9 +46,7 @@ pub fn mock_slp() -> ServerListPingResponse {
         description: ServerListPingDescription {
             text: "Java edition doesn't necessarily mean everything is run by Java.".to_owned(),
         },
-    };
-
-    slp
+    }
 }
 
 #[cfg(test)]

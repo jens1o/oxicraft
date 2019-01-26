@@ -1,5 +1,6 @@
 use super::{Decodeable, Encodeable};
 use std::collections::VecDeque;
+use std::i64;
 use std::io;
 
 pub type Long = i64;
@@ -9,11 +10,11 @@ impl Decodeable<Long, io::Error> for VecDeque<u8> {
         let mut result: Long = 0;
 
         for _ in 1..=8 {
-            result += self
-                .pop_front()
-                .expect("Vector needs to have 8 bytes to decode a long(i64).")
-                as i64;
-            result = result << 8;
+            result += i64::from(
+                self.pop_front()
+                    .expect("Vector needs to have 8 bytes to decode a long(i64)."),
+            );
+            result <<= 8;
         }
 
         Ok(result)
@@ -30,9 +31,9 @@ impl Encodeable for Long {
         for _ in 1..=8 {
             // save encoded value in a temporial variable to avoid lossing
             // information
-            let temp = value & 0b11111111;
+            let temp = value & 0b1111_1111;
 
-            value = value >> 8;
+            value >>= 8;
 
             result.push_front(temp as u8);
         }

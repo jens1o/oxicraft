@@ -13,7 +13,7 @@ impl Encodeable for Int {
         for _ in 1..=4 {
             let temp = value & 0b1111;
 
-            value = value >> 4;
+            value >>= 4;
 
             result.push_back(temp as u8);
         }

@@ -32,7 +32,7 @@ impl Decodeable<MinecraftBoolean, io::Error> for VecDeque<u8> {
 
 impl Encodeable for MinecraftBoolean {
     fn encode(&self) -> VecDeque<u8> {
-        return VecDeque::from(vec![if *self { 0x01 } else { 0x00 }]);
+        VecDeque::from(vec![if *self { 0x01 } else { 0x00 }])
     }
 
     fn byte_length(&self) -> u8 {

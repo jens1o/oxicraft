@@ -84,10 +84,10 @@ impl Encodeable for Varint {
         let mut value = (*self).0 as u32;
 
         loop {
-            let mut temp = value & 0b01111111;
-            value = value >> 7;
+            let mut temp = value & 0b0111_1111;
+            value >>= 7;
             if value != 0 {
-                temp |= 0b10000000;
+                temp |= 0b1000_0000;
             }
 
             result.push_back(temp as u8);
@@ -112,10 +112,10 @@ impl Encodeable for usize {
         let mut value = *self;
 
         loop {
-            let mut temp = value & 0b01111111;
-            value = value >> 7;
+            let mut temp = value & 0b0111_1111;
+            value >>= 7;
             if value != 0 {
-                temp |= 0b10000000;
+                temp |= 0b1000_0000;
             }
 
             result.push_front(temp as u8);

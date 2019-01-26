@@ -4,12 +4,11 @@ extern crate serde_json;
 extern crate simplelog;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
-mod packet;
 
 mod coding;
 mod connection;
 mod entity;
+mod packet;
 
 use crate::connection::{handshake::HandshakeNextState, Connection};
 use log::LevelFilter;
