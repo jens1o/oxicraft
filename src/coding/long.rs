@@ -13,7 +13,7 @@ impl Decodeable<Long, io::Error> for VecDeque<u8> {
             let byte = self.pop_front().expect("Vector needs to have 8 bytes to decode a long(i64).") as u64;
             temp += byte;
             if i != 8 {
-                temp = temp << 8;
+                temp <<= 8;
             }
             
         }
