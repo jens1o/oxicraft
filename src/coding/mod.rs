@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
 
 pub mod boolean;
-pub mod byte;
+pub mod signed_byte;
+pub mod unsigned_byte;
 pub mod difficulty;
 pub mod dimension;
 pub mod gamemode;
