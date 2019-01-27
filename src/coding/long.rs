@@ -9,21 +9,37 @@ impl Decodeable<Long, io::Error> for VecDeque<u8> {
     fn decode(&mut self) -> Result<Long, io::Error> {
         let mut temp: u64 = 0;
 
-        for i in 1..=8 {
-            let byte = self.pop_front().expect("Vector needs to have 8 bytes to decode a long(i64).") as u64;
-            temp += byte;
-            if i != 8 {
-                temp <<= 8;
+        #[inline(always)]
+        fn get_byte_or_fail(vector: &mut VecDeque<u8>) -> Result<u8, io::Error> {
+            let value = vector.pop_front();
+
+            if value.is_some() {
+                Ok(value.unwrap())
+            } else {
+                Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Not enough bytes to decode a long(i64)!",
+                ))
             }
-            
+        };
+
+        for _ in 1..=7 {
+            let byte = get_byte_or_fail(self)? as u64;
+            temp += byte;
+            temp <<= 8;
         }
+
+        // add remaining byte without the shift
+        let byte = get_byte_or_fail(self)? as u64;
+        temp += byte;
+
         let msb = temp >> 63;
-        
+
         let mut result: Long = temp as Long;
         if msb == 0b1 {
             result = -(!temp as Long);
         }
-        
+
         Ok(result)
     }
 }
@@ -38,13 +54,15 @@ impl Encodeable for Long {
             value = !value | (0b1 << 63)
         }
 
-        for i in 1..=8 {
+        for _ in 1..=7 {
             let byte = (value & 0b11111111) as u8;
-            if i != 8 {
-                value >>= 8;
-            }
+            value >>= 8;
             result.push_front(byte);
         }
+
+        // add remaining byte without shifting
+        let byte = (value & 0b11111111) as u8;
+        result.push_front(byte);
 
         result
     }
@@ -68,7 +86,10 @@ mod tests {
             (-1, vec![255, 255, 255, 255, 255, 255, 255, 254]),
             (255, vec![0, 0, 0, 0, 0, 0, 0, 255]),
             (-255, vec![255, 255, 255, 255, 255, 255, 255, 0]),
-            (0x7FFFFFFFFFFFFFFF, vec![127, 255, 255, 255, 255, 255, 255, 255]),
+            (
+                0x7FFFFFFFFFFFFFFF,
+                vec![127, 255, 255, 255, 255, 255, 255, 255],
+            ),
             (-0x7FFFFFFFFFFFFFFF, vec![128, 0, 0, 0, 0, 0, 0, 0]),
         ];
 
@@ -86,7 +107,10 @@ mod tests {
             (-1, vec![255, 255, 255, 255, 255, 255, 255, 254]),
             (255, vec![0, 0, 0, 0, 0, 0, 0, 255]),
             (-255, vec![255, 255, 255, 255, 255, 255, 255, 0]),
-            (0x7FFFFFFFFFFFFFFF, vec![127, 255, 255, 255, 255, 255, 255, 255]),
+            (
+                0x7FFFFFFFFFFFFFFF,
+                vec![127, 255, 255, 255, 255, 255, 255, 255],
+            ),
             (-0x7FFFFFFFFFFFFFFF, vec![128, 0, 0, 0, 0, 0, 0, 0]),
         ];
 

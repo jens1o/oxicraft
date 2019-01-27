@@ -26,7 +26,7 @@ impl fmt::Display for LevelType {
 
 impl Encodeable for LevelType {
     fn encode(&self) -> VecDeque<u8> {
-        return self.to_string().encode();
+        self.to_string().encode()
     }
 
     fn byte_length(&self) -> u8 {
