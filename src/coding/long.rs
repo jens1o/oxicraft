@@ -47,7 +47,7 @@ impl Decodeable<Long, io::Error> for VecDeque<u8> {
 impl Encodeable for Long {
     fn encode(&self) -> VecDeque<u8> {
         let mut result: VecDeque<u8> = VecDeque::with_capacity(8);
-        //max long value: +/- 9223372036854775808
+        // max long value: +/- 9223372036854775808
         let mut value = (i64::abs(*self)) as u64;
 
         if i64::is_negative(*self) {
@@ -117,5 +117,21 @@ mod tests {
         for mapping in mappings {
             assert_eq!(VecDeque::from(mapping.1), mapping.0.encode());
         }
+    }
+
+    use test::{black_box, Bencher};
+    #[bench]
+    fn bench_decoding(b: &mut Bencher) {
+        b.iter(|| {
+            let input: Vec<u8> = vec![128, 0, 0, 0, 0, 0, 0, 0];
+            black_box::<Long>(VecDeque::from(input).decode().unwrap());
+        });
+    }
+    #[bench]
+    fn bench_encoding(b: &mut Bencher) {
+        b.iter(|| {
+            let input: Long = -0x7FFFFFFFFFFFFFFF;
+            black_box::<VecDeque<u8>>(input.encode());
+        });
     }
 }

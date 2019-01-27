@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![feature(test)]
+extern crate test;
+
 #[macro_use]
 extern crate log;
 extern crate serde_json;
