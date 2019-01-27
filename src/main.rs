@@ -53,7 +53,15 @@ fn handle_connection(stream: TcpStream) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
-    SimpleLogger::init(LevelFilter::Trace, Config::default()).unwrap();
+    SimpleLogger::init(
+        if cfg!(debug_assertions) {
+            LevelFilter::Trace
+        } else {
+            LevelFilter::Info
+        },
+        Config::default(),
+    )
+    .unwrap();
 
     info!("Started logging.");
 
