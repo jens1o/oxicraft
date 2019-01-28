@@ -33,7 +33,7 @@ impl Decodeable<MinecraftFloat, io::Error> for VecDeque<u8> {
         let byte = get_byte_or_fail(self)? as u32;
         temp += byte;
 
-        let mut result: MinecraftFloat = f32::from_bits(temp);
+        let result: MinecraftFloat = f32::from_bits(temp);
         Ok(result)
     }
 }
