@@ -3,10 +3,10 @@ use std::collections::VecDeque;
 use std::f32;
 use std::io;
 
-pub type Float = f32;
+pub type MinecraftFloat = f32;
 
-impl Decodeable<Float, io::Error> for VecDeque<u8> {
-    fn decode(&mut self) -> Result<Float, io::Error> {
+impl Decodeable<MinecraftFloat, io::Error> for VecDeque<u8> {
+    fn decode(&mut self) -> Result<MinecraftFloat, io::Error> {
         let mut temp: u32 = 0;
 
         #[inline(always)]
@@ -18,7 +18,7 @@ impl Decodeable<Float, io::Error> for VecDeque<u8> {
             } else {
                 Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
-                    "Not enough bytes to decode a float(f32)!",
+                    "Not enough bytes to decode a MinecraftFloat(f32)!",
                 ))
             }
         };
@@ -33,12 +33,12 @@ impl Decodeable<Float, io::Error> for VecDeque<u8> {
         let byte = get_byte_or_fail(self)? as u32;
         temp += byte;
 
-        let mut result: Float = f32::from_bits(temp);
+        let mut result: MinecraftFloat = f32::from_bits(temp);
         Ok(result)
     }
 }
 
-impl Encodeable for Float {
+impl Encodeable for MinecraftFloat {
     fn encode(&self) -> VecDeque<u8> {
         let mut result: VecDeque<u8> = VecDeque::with_capacity(4);
         let mut value = f32::to_bits(*self);
@@ -62,13 +62,13 @@ impl Encodeable for Float {
 
 #[cfg(test)]
 mod tests {
-    use super::Float;
+    use super::MinecraftFloat;
     use super::{Decodeable, Encodeable};
     use std::collections::VecDeque;
 
     #[test]
     fn test_read_float_on_vec() {
-        let mappings: Vec<(Float, Vec<u8>)> = vec![
+        let mappings: Vec<(MinecraftFloat, Vec<u8>)> = vec![
             (12.5f32, vec![0x41, 0x48, 0, 0]),
             (-12.5f32, vec![0xC1, 0x48, 0, 0]),
             (1f32, vec![0x3F, 0x80, 0, 0]),
@@ -76,14 +76,14 @@ mod tests {
         ];
 
         for mapping in mappings {
-            let actual: Float = VecDeque::from(mapping.1).decode().unwrap();
+            let actual: MinecraftFloat = VecDeque::from(mapping.1).decode().unwrap();
 
             assert_eq!(mapping.0, actual);
         }
     }
     #[test]
     fn test_write_float_to_vec() {
-        let mappings: Vec<(Float, Vec<u8>)> = vec![
+        let mappings: Vec<(MinecraftFloat, Vec<u8>)> = vec![
             (12.5f32, vec![0x41, 0x48, 0, 0]),
             (-12.5f32, vec![0xC1, 0x48, 0, 0]),
             (1f32, vec![0x3F, 0x80, 0, 0]),
