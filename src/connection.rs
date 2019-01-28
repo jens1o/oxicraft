@@ -261,18 +261,15 @@ impl Connection {
 
             packet.send(&mut self.tcp_stream)?;
 
-            // TODO: S->C Player Abilities Packet
-
-            // Test Player Abilities Packet
-            // let mut packet = Packet::from_id_and_data( 
-            //     Varint(0x2E),
-            //     PacketData::Data(super::build_package_data!(
-            //         0b1101i8,
-            //         0.5f32,
-            //         0.5f32
-            //     )),
-            // );
-            // packet.send(&mut self.tcp_stream)?;
+            let mut packet = Packet::from_id_and_data( 
+                Varint(0x2E),
+                PacketData::Data(super::build_package_data!( // TODO change values to sth. usefull
+                    0b1101i8,
+                    0.5f32,
+                    0.5f32
+                )),
+            );
+            packet.send(&mut self.tcp_stream)?;
 
         }
 
