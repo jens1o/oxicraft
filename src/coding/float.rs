@@ -51,6 +51,7 @@ impl Encodeable for MinecraftFloat {
 
         // add remaining byte without shifting
         let byte = (value & 0b11111111) as u8;
+        
         result.push_front(byte);
         result
     }
