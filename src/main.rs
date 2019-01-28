@@ -11,6 +11,7 @@ extern crate serde_derive;
 mod coding;
 mod connection;
 mod entity;
+mod location;
 mod packet;
 mod world;
 

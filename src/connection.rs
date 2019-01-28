@@ -1,10 +1,13 @@
 pub mod handshake;
 
+use crate::coding::float::MinecraftFloat;
 use crate::coding::short::UnsignedShort;
+use crate::coding::signed_byte::MinecraftSignedByte;
 use crate::coding::string::ReadString;
 use crate::coding::varint::Varint;
 use crate::coding::{Decodeable, Encodeable};
 use crate::entity::get_new_eid;
+use crate::location::Location;
 use crate::packet::{Packet, PacketData};
 use crate::world::World;
 use std::collections::VecDeque;
@@ -222,9 +225,10 @@ impl Connection {
 
             // S->C Login Success Packet
 
-            info!(
+            trace!(
                 "Sending login success packet to {} ({}).",
-                &username, self.connection_id
+                &username,
+                self.connection_id
             );
 
             let mut login_success_packet = Packet::from_id_and_data(
@@ -261,16 +265,49 @@ impl Connection {
 
             packet.send(&mut self.tcp_stream)?;
 
-            let mut packet = Packet::from_id_and_data( 
+            trace!("Sent join game to connection {}", self.connection_id);
+
+            // S->C Plugin Message (for setting our server name)
+            let mut packet = Packet::from_id_and_data(
+                Varint(0x19),
+                PacketData::Data(super::build_package_data!(
+                    "minecraft:brand",                    // Channel
+                    VecDeque::from(b"oxicraft".to_vec())  // Value (our server name)
+                )),
+            );
+
+            packet.send(&mut self.tcp_stream)?;
+
+            trace!("Sent plugin message to connection {}", self.connection_id);
+
+            // S->C Spawn location
+            let spawn_location = Location { x: 0, y: 0, z: 0 };
+
+            let mut packet = Packet::from_id_and_data(
+                Varint(0x49),
+                PacketData::Data(super::build_package_data!(spawn_location)),
+            );
+
+            packet.send(&mut self.tcp_stream)?;
+
+            // S->C Player Abilities
+
+            // TODO: Find better fitting values
+            let flags: MinecraftSignedByte = 0b1101; // flying and creative
+            let flying_speed: MinecraftFloat = 0.05;
+            let walking_speed: MinecraftFloat = 0.1;
+
+            let mut packet = Packet::from_id_and_data(
                 Varint(0x2E),
-                PacketData::Data(super::build_package_data!( // TODO change values to sth. usefull
-                    0b1101i8,
-                    0.5f32,
-                    0.5f32
+                PacketData::Data(super::build_package_data!(
+                    flags,
+                    flying_speed,
+                    walking_speed
                 )),
             );
             packet.send(&mut self.tcp_stream)?;
 
+            trace!("Sent player abilities to connection {}", self.connection_id);
         }
 
         Ok(())

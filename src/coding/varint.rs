@@ -1,11 +1,18 @@
 use super::{Decodeable, Encodeable};
 use std::collections::VecDeque;
+use std::fmt;
 use std::io::{self, Read};
 use std::net::TcpStream;
 use std::{i32, u8};
 
-#[derive(Debug)]
 pub struct Varint(pub i32);
+
+impl fmt::Debug for Varint {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // write the output in big hexadecimal notation
+        write!(f, "Varint({:#X})", self.0)
+    }
+}
 
 impl PartialEq<Varint> for i32 {
     fn eq(&self, other: &Varint) -> bool {

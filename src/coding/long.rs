@@ -33,7 +33,7 @@ impl Decodeable<Long, io::Error> for VecDeque<u8> {
         let byte = get_byte_or_fail(self)? as u64;
         temp += byte;
 
-        let mut result: Long = temp as Long;
+        let result: Long = temp as Long;
         Ok(result)
     }
 }
@@ -43,7 +43,7 @@ impl Encodeable for Long {
         let mut result: VecDeque<u8> = VecDeque::with_capacity(8);
         // max long value: -9223372036854775808 / +9223372036854775807
         let mut value = *self as u64;
-        
+
         for _ in 1..=7 {
             let byte = (value & 0b11111111) as u8;
             value >>= 8;
@@ -76,7 +76,10 @@ mod tests {
             (127, vec![0, 0, 0, 0, 0, 0, 0, 127]),
             (-127, vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x81]),
             (-0x8000000000000000, vec![0x80, 0, 0, 0, 0, 0, 0, 0]), // lowest possible value
-            (0x7FFFFFFFFFFFFFFF, vec![0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]), // highest possible value
+            (
+                0x7FFFFFFFFFFFFFFF,
+                vec![0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF],
+            ), // highest possible value
         ];
 
         for mapping in mappings {
@@ -94,7 +97,10 @@ mod tests {
             (127, vec![0, 0, 0, 0, 0, 0, 0, 127]),
             (-127, vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x81]),
             (-0x8000000000000000, vec![0x80, 0, 0, 0, 0, 0, 0, 0]), // lowest possible value
-            (0x7FFFFFFFFFFFFFFF, vec![0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]), // highest possible value
+            (
+                0x7FFFFFFFFFFFFFFF,
+                vec![0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF],
+            ), // highest possible value
         ];
 
         for mapping in mappings {

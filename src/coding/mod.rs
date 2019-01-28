@@ -1,18 +1,20 @@
 use std::collections::VecDeque;
 
 pub mod boolean;
-pub mod signed_byte;
-pub mod unsigned_byte;
 pub mod difficulty;
 pub mod dimension;
+pub mod float;
 pub mod gamemode;
 pub mod int;
 pub mod level_type;
+pub mod location;
 pub mod long;
-pub mod float;
 pub mod short;
+pub mod signed_byte;
 pub mod string;
+pub mod unsigned_byte;
 pub mod varint;
+pub mod vec_deque;
 
 pub trait Decodeable<T, E> {
     /// Decodes from the Minecraft format into the type T, optionally returning
