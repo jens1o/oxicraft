@@ -9,6 +9,7 @@ pub mod gamemode;
 pub mod int;
 pub mod level_type;
 pub mod long;
+pub mod float;
 pub mod short;
 pub mod string;
 pub mod varint;
