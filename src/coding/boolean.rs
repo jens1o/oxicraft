@@ -24,7 +24,7 @@ impl Decodeable<MinecraftBoolean, io::Error> for VecDeque<u8> {
         } else {
             Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                format!("Invalid boolean value {}!", value),
+                format!("Invalid boolean value {:X}!", value),
             ))
         }
     }
@@ -60,13 +60,33 @@ mod tests {
 
     #[test]
     fn test_decoding_err() {
-        let mappings: Vec<Vec<u8>> = vec![vec![0x42], vec![0x21], vec![]];
+        let mappings: Vec<Vec<u8>> = vec![vec![0x42], vec![0x21]];
 
         for mapping in mappings {
+            let err_message = format!("Invalid boolean value {:X}!", mapping.first().unwrap());
+
             let actual: Result<MinecraftBoolean, io::Error> = VecDeque::from(mapping).decode();
 
             assert!(actual.is_err());
+            let err = actual.unwrap_err();
+
+            assert_eq!(err.kind(), io::ErrorKind::InvalidData);
+            assert_eq!(err.to_string(), err_message);
         }
+    }
+
+    #[test]
+    fn test_decoding_err_empty() {
+        let actual: Result<MinecraftBoolean, io::Error> = VecDeque::from(vec![]).decode();
+
+        assert!(actual.is_err());
+        let err = actual.unwrap_err();
+
+        assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
+        assert_eq!(
+            err.to_string(),
+            "A minecraft boolean consists of one byte, but there is none!"
+        );
     }
 
     #[test]

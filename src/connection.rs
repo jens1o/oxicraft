@@ -1,5 +1,6 @@
 pub mod handshake;
 
+use crate::client_settings::ClientSettings;
 use crate::coding::float::MinecraftFloat;
 use crate::coding::short::UnsignedShort;
 use crate::coding::signed_byte::MinecraftSignedByte;
@@ -38,7 +39,7 @@ impl fmt::Display for ConnectionId {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum ConnectionState {
     Unknown,
     Handshaking,
@@ -62,6 +63,7 @@ pub struct Connection {
     /// the server address used to connect to this specified by the client
     pub server_address: Option<SocketAddr>,
     pub username: Option<String>,
+    pub client_settings: Option<ClientSettings>,
 }
 
 impl Connection {
@@ -75,6 +77,7 @@ impl Connection {
             protocol_version: Default::default(),
             server_address: Default::default(),
             username: Default::default(),
+            client_settings: Default::default(),
         })
     }
 
@@ -175,13 +178,13 @@ impl Connection {
     }
 
     pub fn send_status(&mut self) -> io::Result<()> {
-        assert!(self.state == ConnectionState::Handshaking);
+        assert_eq!(self.state, ConnectionState::Handshaking);
         let benchmark_start = SystemTime::now();
 
         info!("Sending status to connection {}.", self.connection_id);
 
         // the package id for this(empty) package is 0x00.
-        assert!(self.read_data_packet()?.packet_id == 0x00);
+        assert_eq!(self.read_data_packet()?.packet_id, 0x00);
 
         let response = serde_json::to_string(&handshake::mock_slp())?.to_owned();
 
@@ -214,7 +217,7 @@ impl Connection {
         // C->S Login Start
         let login_packet = self.read_data_packet()?;
 
-        assert!(login_packet.packet_id == 0x00);
+        assert_eq!(login_packet.packet_id, 0x00);
         if let PacketData::Data(mut packet_data) = login_packet.data {
             let username = packet_data.read_string(16)?;
 
@@ -308,6 +311,20 @@ impl Connection {
             packet.send(&mut self.tcp_stream)?;
 
             trace!("Sent player abilities to connection {}", self.connection_id);
+
+            // C->S Client settings
+
+            let client_settings_packet = self.read_data_packet()?;
+
+            assert_eq!(client_settings_packet.packet_id, 0x04);
+
+            if let PacketData::Data(mut packet_data) = client_settings_packet.data {
+                let client_settings: ClientSettings = packet_data.decode()?;
+
+                debug!("Client settings: {:?}", client_settings);
+
+                self.client_settings = Some(client_settings);
+            }
         }
 
         Ok(())
@@ -323,6 +340,7 @@ impl Connection {
         let packet_id: Varint = self.tcp_stream.decode()?;
 
         // read the package contents. We need to read the amount that was given, without the package id.
+        // TODO: Simplify this expression
         let data_length = length - packet_id.encode().len();
 
         trace!(

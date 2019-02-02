@@ -62,8 +62,22 @@ impl Decodeable<Varint, io::Error> for VecDeque<u8> {
         let mut num_of_reads: u8 = 0;
         let mut result: i32 = 0;
 
+        #[inline(always)]
+        fn get_byte_or_fail(vector: &mut VecDeque<u8>) -> Result<u8, io::Error> {
+            let value = vector.pop_front();
+
+            if value.is_some() {
+                Ok(value.unwrap())
+            } else {
+                Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Not enough bytes to decode a Varint!",
+                ))
+            }
+        };
+
         loop {
-            let byte = self.pop_front().unwrap();
+            let byte = get_byte_or_fail(self)?;
             let value = byte & 0b0111_1111;
             result |= i32::from(value) << (7 * num_of_reads);
 
@@ -145,6 +159,7 @@ mod tests {
     use super::{Decodeable, Encodeable, Varint};
     use std::collections::VecDeque;
     use std::i32;
+    use std::io;
 
     #[test]
     fn test_read_varint_from_vec() {
@@ -162,6 +177,21 @@ mod tests {
         for mapping in mappings {
             let expected: Varint = VecDeque::from(mapping.1).decode().unwrap();
             assert_eq!(mapping.0, expected);
+        }
+    }
+
+    #[test]
+    fn test_read_err() {
+        let mappings: Vec<Vec<u8>> = vec![vec![]];
+
+        for mapping in mappings {
+            let expected: Result<Varint, io::Error> = VecDeque::from(mapping).decode();
+            assert!(expected.is_err());
+
+            let err = expected.unwrap_err();
+
+            assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
+            assert_eq!(err.to_string(), "Not enough bytes to decode a Varint!");
         }
     }
 

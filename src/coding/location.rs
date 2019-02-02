@@ -10,7 +10,7 @@ impl Decodeable<Location, io::Error> for VecDeque<u8> {
 
         let x = raw_value >> 38;
 
-        if x < -33554432 || x > 33554431 {
+        if x < -33_554_432 || x > 33_554_431 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "x-coordinate not in valid range!",
@@ -28,7 +28,7 @@ impl Decodeable<Location, io::Error> for VecDeque<u8> {
 
         let z = raw_value << 38 >> 38;
 
-        if z < -33554432 || z > 33554431 {
+        if z < -33_554_432 || z > 33_554_431 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "z-coordinate not in valid range!",
@@ -45,9 +45,9 @@ impl Decodeable<Location, io::Error> for VecDeque<u8> {
 
 impl Encodeable for Location {
     fn encode(&self) -> VecDeque<u8> {
-        let value: Long = (((self.x & 0x3FFFFFF) as i64) << 38)
+        let value: Long = (((self.x & 0x03FF_FFFF) as i64) << 38)
             | (((self.y & 0xFFF) as i64) << 26)
-            | (self.z & 0x3FFFFFF) as i64;
+            | (self.z & 0x03FF_FFFF) as i64;
 
         value.encode()
     }
@@ -56,3 +56,5 @@ impl Encodeable for Location {
         8
     }
 }
+
+// TODO: Add tests with values provided by the client

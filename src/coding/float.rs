@@ -42,16 +42,16 @@ impl Encodeable for MinecraftFloat {
     fn encode(&self) -> VecDeque<u8> {
         let mut result: VecDeque<u8> = VecDeque::with_capacity(4);
         let mut value = f32::to_bits(*self);
-        
+
         for _ in 1..=3 {
-            let byte = (value & 0b11111111) as u8;
+            let byte = (value & 0b1111_1111) as u8;
             value >>= 8;
             result.push_front(byte);
         }
 
         // add remaining byte without shifting
-        let byte = (value & 0b11111111) as u8;
-        
+        let byte = (value & 0b1111_1111) as u8;
+
         result.push_front(byte);
         result
     }

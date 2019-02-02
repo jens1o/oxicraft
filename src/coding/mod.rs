@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 
 pub mod boolean;
+pub mod chat_mode;
+pub mod client_settings;
 pub mod difficulty;
 pub mod dimension;
 pub mod float;
@@ -9,6 +11,7 @@ pub mod int;
 pub mod level_type;
 pub mod location;
 pub mod long;
+pub mod main_hand;
 pub mod short;
 pub mod signed_byte;
 pub mod string;

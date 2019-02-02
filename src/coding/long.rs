@@ -45,13 +45,13 @@ impl Encodeable for Long {
         let mut value = *self as u64;
 
         for _ in 1..=7 {
-            let byte = (value & 0b11111111) as u8;
+            let byte = (value & 0b1111_1111) as u8;
             value >>= 8;
             result.push_front(byte);
         }
 
         // add remaining byte without shifting
-        let byte = (value & 0b11111111) as u8;
+        let byte = (value & 0b1111_1111) as u8;
         result.push_front(byte);
         result
     }

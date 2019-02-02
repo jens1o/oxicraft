@@ -8,6 +8,7 @@ extern crate simplelog;
 #[macro_use]
 extern crate serde_derive;
 
+mod client_settings;
 mod coding;
 mod connection;
 mod entity;
