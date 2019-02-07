@@ -2,6 +2,7 @@ use super::{Decodeable, Encodeable};
 use crate::coding::long::Long;
 use crate::location::Location;
 use std::collections::VecDeque;
+use std::i64;
 use std::io;
 
 impl Decodeable<Location, io::Error> for VecDeque<u8> {
@@ -45,9 +46,9 @@ impl Decodeable<Location, io::Error> for VecDeque<u8> {
 
 impl Encodeable for Location {
     fn encode(&self) -> VecDeque<u8> {
-        let value: Long = (((self.x & 0x03FF_FFFF) as i64) << 38)
-            | (((self.y & 0xFFF) as i64) << 26)
-            | (self.z & 0x03FF_FFFF) as i64;
+        let value: Long = (i64::from(self.x & 0x03FF_FFFF) << 38)
+            | (i64::from(self.y & 0xFFF) << 26)
+            | i64::from(self.z & 0x03FF_FFFF);
 
         value.encode()
     }

@@ -24,13 +24,13 @@ impl Decodeable<Long, io::Error> for VecDeque<u8> {
         };
 
         for _ in 1..=7 {
-            let byte = get_byte_or_fail(self)? as u64;
+            let byte = u64::from(get_byte_or_fail(self)?);
             temp += byte;
             temp <<= 8;
         }
 
         // add remaining byte without the shift
-        let byte = get_byte_or_fail(self)? as u64;
+        let byte = u64::from(get_byte_or_fail(self)?);
         temp += byte;
 
         let result: Long = temp as Long;

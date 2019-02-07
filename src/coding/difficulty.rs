@@ -1,12 +1,6 @@
 use super::Encodeable;
+use crate::difficulty::Difficulty;
 use std::collections::VecDeque;
-
-pub enum Difficulty {
-    Peaceful = 0x00,
-    Easy = 0x01,
-    Normal = 0x02,
-    Hard = 0x03,
-}
 
 impl Encodeable for Difficulty {
     fn encode(&self) -> VecDeque<u8> {

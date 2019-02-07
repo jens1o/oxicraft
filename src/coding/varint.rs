@@ -5,6 +5,7 @@ use std::io::{self, Read};
 use std::net::TcpStream;
 use std::{i32, u8};
 
+#[derive(PartialEq)]
 pub struct Varint(pub i32);
 
 impl fmt::Debug for Varint {

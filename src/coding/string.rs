@@ -8,7 +8,7 @@ use std::io;
 pub type MinecraftString = String;
 
 pub trait ReadString<E> {
-    /// reads a string from the buffer, throwing an error if the length is over `max_size`
+    /// Reads a string from the buffer, throwing an error if the length is over `max_size`
     fn read_string(&mut self, max_size: u16) -> Result<MinecraftString, E>;
 }
 

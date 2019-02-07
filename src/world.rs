@@ -1,6 +1,6 @@
-use crate::coding::{
-    difficulty::Difficulty, dimension::Dimension, gamemode::Gamemode, level_type::LevelType,
-};
+use crate::coding::{gamemode::Gamemode, level_type::LevelType};
+use crate::difficulty::Difficulty;
+use crate::dimension::Dimension;
 
 pub struct World {
     pub gamemode: Gamemode,

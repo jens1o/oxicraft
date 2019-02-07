@@ -1,16 +1,11 @@
 pub mod handshake;
 
 use crate::client_settings::ClientSettings;
-use crate::coding::float::MinecraftFloat;
 use crate::coding::short::UnsignedShort;
-use crate::coding::signed_byte::MinecraftSignedByte;
 use crate::coding::string::ReadString;
 use crate::coding::varint::Varint;
 use crate::coding::{Decodeable, Encodeable};
-use crate::entity::get_new_eid;
-use crate::location::Location;
 use crate::packet::{Packet, PacketData};
-use crate::world::World;
 use std::collections::VecDeque;
 use std::fmt;
 use std::io::{self, Read};
@@ -21,34 +16,30 @@ use std::u16;
 
 static CONNECTION_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
-pub struct ConnectionId {
-    pub value: usize,
-}
+#[derive(Copy, Clone)]
+pub struct ConnectionId(pub usize);
 
 impl ConnectionId {
     pub fn new() -> ConnectionId {
-        ConnectionId {
-            value: CONNECTION_COUNTER.fetch_add(1, Ordering::SeqCst),
-        }
+        ConnectionId(CONNECTION_COUNTER.fetch_add(1, Ordering::SeqCst))
     }
 }
 
 impl fmt::Display for ConnectionId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "#{}", self.value)
+        write!(f, "#{}", self.0)
     }
 }
 
 #[derive(PartialEq, Debug)]
 pub enum ConnectionState {
-    Unknown,
     Handshaking,
     Play,
 }
 
 impl Default for ConnectionState {
     fn default() -> Self {
-        ConnectionState::Unknown
+        ConnectionState::Handshaking
     }
 }
 
@@ -213,7 +204,8 @@ impl Connection {
     }
 
     /// Performs the necessary step to let the user spawn on a flat-map with grass all over the place.
-    pub fn login(&mut self) -> io::Result<()> {
+    /// Returns a tuple (username, uuid).
+    pub fn prepare_login(&mut self) -> io::Result<(String, String)> {
         // C->S Login Start
         let login_packet = self.read_data_packet()?;
 
@@ -226,108 +218,13 @@ impl Connection {
             // UUID-4 (with hyphens) of jens1o
             let player_uuid = "8e383e9f-608e-4556-97c9-61312c741ea0".to_owned();
 
-            // S->C Login Success Packet
-
-            trace!(
-                "Sending login success packet to {} ({}).",
-                &username,
-                self.connection_id
-            );
-
-            let mut login_success_packet = Packet::from_id_and_data(
-                Varint(0x02),
-                PacketData::Data(super::build_package_data!(player_uuid, username)),
-            );
-
-            self.username = Some(username);
-
-            login_success_packet.send(&mut self.tcp_stream)?;
-            info!("Sent login success package.");
-
-            self.state = ConnectionState::Play;
-
-            // S->C Join Game
-
-            let entity_id: i32 = get_new_eid() as i32;
-            let world = World::default();
-            let max_players: u8 = 20;
-            let reduced_debug_info: bool = false;
-
-            let mut packet = Packet::from_id_and_data(
-                Varint(0x25),
-                PacketData::Data(super::build_package_data!(
-                    entity_id,
-                    world.gamemode,
-                    world.dimension,
-                    world.difficulty,
-                    max_players,
-                    world.level_type,
-                    reduced_debug_info
-                )),
-            );
-
-            packet.send(&mut self.tcp_stream)?;
-
-            trace!("Sent join game to connection {}", self.connection_id);
-
-            // S->C Plugin Message (for setting our server name)
-            let mut packet = Packet::from_id_and_data(
-                Varint(0x19),
-                PacketData::Data(super::build_package_data!(
-                    "minecraft:brand",                    // Channel
-                    VecDeque::from(b"oxicraft".to_vec())  // Value (our server name)
-                )),
-            );
-
-            packet.send(&mut self.tcp_stream)?;
-
-            trace!("Sent plugin message to connection {}", self.connection_id);
-
-            // S->C Spawn location
-            let spawn_location = Location { x: 0, y: 0, z: 0 };
-
-            let mut packet = Packet::from_id_and_data(
-                Varint(0x49),
-                PacketData::Data(super::build_package_data!(spawn_location)),
-            );
-
-            packet.send(&mut self.tcp_stream)?;
-
-            // S->C Player Abilities
-
-            // TODO: Find better fitting values
-            let flags: MinecraftSignedByte = 0b1101; // flying and creative
-            let flying_speed: MinecraftFloat = 0.05;
-            let walking_speed: MinecraftFloat = 0.1;
-
-            let mut packet = Packet::from_id_and_data(
-                Varint(0x2E),
-                PacketData::Data(super::build_package_data!(
-                    flags,
-                    flying_speed,
-                    walking_speed
-                )),
-            );
-            packet.send(&mut self.tcp_stream)?;
-
-            trace!("Sent player abilities to connection {}", self.connection_id);
-
-            // C->S Client settings
-
-            let client_settings_packet = self.read_data_packet()?;
-
-            assert_eq!(client_settings_packet.packet_id, 0x04);
-
-            if let PacketData::Data(mut packet_data) = client_settings_packet.data {
-                let client_settings: ClientSettings = packet_data.decode()?;
-
-                debug!("Client settings: {:?}", client_settings);
-
-                self.client_settings = Some(client_settings);
-            }
+            Ok((username, player_uuid))
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Login Start packet not sent by client!",
+            ))
         }
-
-        Ok(())
     }
 
     pub fn read_data_packet(&mut self) -> io::Result<Packet> {

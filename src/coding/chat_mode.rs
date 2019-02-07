@@ -17,7 +17,7 @@ impl Decodeable<ChatMode, io::Error> for VecDeque<u8> {
         } else {
             Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                "The raw value for decoding the chat mode needs to be one, two or zero!"
+                "The raw value for decoding the chat mode needs to be one, two or zero!",
             ))
         }
     }
@@ -47,12 +47,31 @@ mod tests {
 
     #[test]
     fn test_decoding_err() {
-        let mappings: Vec<Vec<u8>> = vec![vec![0x42], vec![0x07, 0x03], vec![]];
+        let mappings: Vec<Vec<u8>> = vec![vec![0x42], vec![0x07, 0x03]];
 
         for mapping in mappings {
             let actual: Result<ChatMode, io::Error> = dbg!(VecDeque::from(mapping).decode());
 
             assert!(actual.is_err());
+
+            let err = actual.unwrap_err();
+
+            assert_eq!(err.kind(), io::ErrorKind::InvalidData);
+            assert_eq!(
+                err.to_string(),
+                "The raw value for decoding the chat mode needs to be one, two or zero!"
+            );
         }
+    }
+
+    #[test]
+    fn test_decoding_err_empty() {
+        let actual: Result<ChatMode, io::Error> = VecDeque::from(vec![]).decode();
+
+        assert!(actual.is_err());
+        let err = actual.unwrap_err();
+
+        assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
+        assert_eq!(err.to_string(), "Not enough bytes to decode a Varint!");
     }
 }

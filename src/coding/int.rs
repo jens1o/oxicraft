@@ -1,9 +1,9 @@
 use super::Encodeable;
 use std::collections::VecDeque;
 
-pub type Int = i32;
+pub type MinecraftInt = i32;
 
-impl Encodeable for Int {
+impl Encodeable for MinecraftInt {
     fn encode(&self) -> VecDeque<u8> {
         // an int is 4 bytes long
         let mut result: VecDeque<u8> = VecDeque::with_capacity(4);

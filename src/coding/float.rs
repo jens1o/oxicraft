@@ -2,6 +2,7 @@ use super::{Decodeable, Encodeable};
 use std::collections::VecDeque;
 use std::f32;
 use std::io;
+use std::u32;
 
 pub type MinecraftFloat = f32;
 
@@ -24,13 +25,13 @@ impl Decodeable<MinecraftFloat, io::Error> for VecDeque<u8> {
         };
 
         for _ in 1..=3 {
-            let byte = get_byte_or_fail(self)? as u32;
+            let byte = u32::from(get_byte_or_fail(self)?);
             temp += byte;
             temp <<= 8;
         }
 
         // add remaining byte without the shift
-        let byte = get_byte_or_fail(self)? as u32;
+        let byte = u32::from(get_byte_or_fail(self)?);
         temp += byte;
 
         let result: MinecraftFloat = f32::from_bits(temp);
