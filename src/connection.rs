@@ -73,6 +73,8 @@ impl Connection {
     }
 
     pub fn do_handshake(&mut self) -> io::Result<handshake::HandshakeNextState> {
+        assert_eq!(self.state, ConnectionState::Handshaking);
+
         info!(
             "Processing handshake for connection {}.",
             self.connection_id
@@ -88,8 +90,6 @@ impl Connection {
                 "Client indicates it is not looking for a handshake, rather than an existing connection."
             ));
         }
-
-        self.state = ConnectionState::Handshaking;
 
         if let PacketData::Data(mut packet_data) = data_packet.data {
             // read protocol version

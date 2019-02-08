@@ -1,5 +1,6 @@
 use crate::coding::short::UnsignedShort;
 use crate::coding::string::MinecraftString;
+use crate::player::Player;
 
 #[derive(Debug)]
 pub enum HandshakeNextState {
@@ -17,7 +18,7 @@ pub struct ServerListPingVersion {
 pub struct ServerListPingPlayers {
     max: UnsignedShort,
     online: UnsignedShort,
-    sample: Vec<()>, // TODO: Not implemented yet
+    sample: Vec<Player>,
 }
 
 #[derive(Serialize)]

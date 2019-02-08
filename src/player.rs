@@ -9,6 +9,8 @@ use crate::location::Location;
 use crate::packet::{Packet, PacketData};
 use crate::plugin_message::{PluginMessage, PluginMessageOrigin};
 use crate::world::World;
+use serde::ser::SerializeStruct;
+use serde::{Serialize, Serializer};
 use std::collections::VecDeque;
 use std::f64;
 use std::io;
@@ -244,5 +246,18 @@ impl Player {
             io::ErrorKind::InvalidData,
             "Teleport-ID by client didn't matched.",
         ))
+    }
+}
+
+/// Implemented to match https://wiki.vg/Server_List_Ping#Response (sample values)
+impl Serialize for Player {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Player", 2)?;
+        state.serialize_field("name", &self.username)?;
+        state.serialize_field("id", &self.uuid)?;
+        state.end()
     }
 }
