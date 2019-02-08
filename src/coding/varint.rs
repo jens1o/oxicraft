@@ -15,6 +15,12 @@ impl fmt::Debug for Varint {
     }
 }
 
+impl fmt::Display for Varint {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 impl PartialEq<Varint> for i32 {
     fn eq(&self, other: &Varint) -> bool {
         *self == other.0

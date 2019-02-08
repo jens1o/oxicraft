@@ -1,4 +1,5 @@
 use crate::client_settings::ClientSettings;
+use crate::client_status::ClientStatus;
 use crate::coding::float::MinecraftFloat;
 use crate::coding::signed_byte::MinecraftSignedByte;
 use crate::coding::varint::Varint;
@@ -237,7 +238,7 @@ impl Player {
             let given_teleport_id: Varint = packet_data.decode()?;
 
             if teleport_id == given_teleport_id {
-                debug!("Teleport {:?} was confirmed by client!", teleport_id);
+                debug!("Teleport {} was confirmed by client!", teleport_id);
                 return Ok(());
             }
         }
@@ -246,6 +247,27 @@ impl Player {
             io::ErrorKind::InvalidData,
             "Teleport-ID by client didn't matched.",
         ))
+    }
+
+    pub fn receive_client_status(&mut self) -> io::Result<ClientStatus> {
+        assert_eq!(self.connection.state, ConnectionState::Play);
+
+        let client_status_packet = self.connection.read_data_packet()?;
+
+        if client_status_packet.packet_id != 0x03 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Client didn't send a client status package.",
+            ));
+        }
+
+        if let PacketData::Data(mut packet_data) = client_status_packet.data {
+            let client_status: ClientStatus = packet_data.decode()?;
+
+            Ok(client_status)
+        } else {
+            unreachable!();
+        }
     }
 }
 

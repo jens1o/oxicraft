@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 pub mod boolean;
 pub mod chat_mode;
 pub mod client_settings;
+pub mod client_status;
 pub mod difficulty;
 pub mod dimension;
 pub mod double;

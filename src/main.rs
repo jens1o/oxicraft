@@ -10,6 +10,7 @@ extern crate simplelog;
 extern crate serde_derive;
 
 mod client_settings;
+mod client_status;
 mod coding;
 mod connection;
 mod difficulty;
@@ -81,6 +82,10 @@ fn handle_connection(stream: TcpStream) -> io::Result<()> {
 
             // Send position once again to confirm
             player.set_location(&Location::default(), 0.0, 0.0, 0b0)?;
+
+            // FIXME: This will fail since the client is sending their positon back first.
+            let client_status = player.receive_client_status()?;
+            debug!("Client status: {:?}", client_status);
 
             info!("Client login successfully done.");
         }
