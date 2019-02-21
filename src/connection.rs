@@ -8,6 +8,7 @@ use crate::coding::{Decodeable, Encodeable};
 use crate::packet::{Packet, PacketData};
 use std::collections::VecDeque;
 use std::fmt;
+use std::io::Write;
 use std::io::{self, Read};
 use std::net::{AddrParseError, IpAddr, SocketAddr, TcpStream};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -196,6 +197,8 @@ impl Connection {
                 Packet::from_id_and_data(Varint(0x01), PacketData::Data(packet_data));
 
             pong_packet.send(&mut self.tcp_stream)?;
+            // flush package immediately(we pong asap)
+            self.tcp_stream.flush()?;
         } else {
             unreachable!();
         }
