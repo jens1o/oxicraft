@@ -43,7 +43,7 @@ impl Packet {
 
         debug!("Sent data {:?}", self);
 
-        connection.flush()
+        Ok(())
     }
 }
 
